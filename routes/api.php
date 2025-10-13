@@ -22,3 +22,12 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::middleware(['force.json', 'throttle:60,1'])->group(function () {
     Route::get('/users', [UserController::class, 'index']);
 });
+
+
+Route::get('/_demo/validation', function (Request $r) {
+    $r->validate(['email' => 'required|email']);
+});
+
+Route::get('/_demo/not-found', function () {
+    abort(404);
+});

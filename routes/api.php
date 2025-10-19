@@ -3,6 +3,8 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
+use App\Models\User;
+use App\Events\UserRegistered;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -30,4 +32,10 @@ Route::get('/_demo/validation', function (Request $r) {
 
 Route::get('/_demo/not-found', function () {
     abort(404);
+});
+
+Route::get('/demo/events/welcome/{id}', function ($id) {
+    $user = User::findOrFail($id);    // lấy user có sẵn trong DB
+    event(new UserRegistered($user)); // bắn sự kiện -> listener -> notif + job
+    return response()->json(['ok' => true]);
 });

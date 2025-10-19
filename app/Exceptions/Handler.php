@@ -12,6 +12,7 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
+use App\Support\Correlation;
 
 class Handler extends ExceptionHandler
 {
@@ -55,44 +56,63 @@ class Handler extends ExceptionHandler
     }
 
     public function render($request, Throwable $e)
-    {
-        if ($request->expectsJson()) {
+{
+    // Lấy ID từ Correlation (đã được middleware RequestCorrelation set ở đầu request)
+    $reqId  = Correlation::requestId();
+    $corrId = Correlation::correlationId();
 
-            // 1) Validation → 422 + fields
-            if ($e instanceof ValidationException) {
-                return response()->json([
-                    'error'      => 'ValidationException',
-                    'message'    => $e->getMessage(),
-                    'fields'     => $e->errors(),
-                    'request_id' => $request->header('X-Request-ID'),
-                ], 422);
-            }
+    if ($request->expectsJson()) {
 
-            // 2) Map status code chuẩn theo loại ngoại lệ
-            $status = match (true) {
-                $e instanceof HttpExceptionInterface         => $e->getStatusCode(), // mọi 4xx/5xx từ Symfony
-                $e instanceof AuthenticationException        => 401,
-                $e instanceof AuthorizationException         => 403,
-                $e instanceof ModelNotFoundException         => 404,
-                $e instanceof NotFoundHttpException          => 404,
-                $e instanceof MethodNotAllowedHttpException  => 405,
-                $e instanceof ThrottleRequestsException      => 429,
-                default                                      => 500,
-            };
+        // 1) Validation → 422 + fields
+        if ($e instanceof \Illuminate\Validation\ValidationException) {
+            $json = response()->json([
+                'error'           => 'ValidationException',
+                'message'         => $e->getMessage(),
+                'fields'          => $e->errors(),
+                'request_id'      => $reqId,   // dùng Correlation thay vì đọc header
+                'correlation_id'  => $corrId,
+            ], 422);
 
-            // 3) Ẩn message khi production (APP_DEBUG=false) với lỗi 5xx
-            $message = config('app.debug')
-                ? $e->getMessage()
-                : ($status >= 500 ? 'Server Error' : $e->getMessage());
-
-            return response()->json([
-                'error'      => class_basename($e),
-                'message'    => $message,
-                'status'     => $status,
-                'request_id' => $request->header('X-Request-ID'),
-            ], $status);
+            // Gắn header ID cho client/devtools
+            return $json->header('X-Request-Id', $reqId)
+                        ->header('X-Correlation-Id', $corrId);
         }
 
-        return parent::render($request, $e);
+        // 2) Map status code chuẩn theo loại ngoại lệ
+        $status = match (true) {
+            $e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface => $e->getStatusCode(),
+            $e instanceof \Illuminate\Auth\AuthenticationException                       => 401,
+            $e instanceof \Illuminate\Auth\Access\AuthorizationException                 => 403,
+            $e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException           => 404,
+            $e instanceof \Symfony\Component\HttpKernel\Exception\NotFoundHttpException  => 404,
+            $e instanceof \Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException => 405,
+            $e instanceof \Illuminate\Http\Exceptions\ThrottleRequestsException          => 429,
+            default                                                                      => 500,
+        };
+
+        // 3) Ẩn message khi production (APP_DEBUG=false) với lỗi 5xx
+        $message = config('app.debug')
+            ? $e->getMessage()
+            : ($status >= 500 ? 'Server Error' : $e->getMessage());
+
+        $json = response()->json([
+            'error'           => class_basename($e),
+            'message'         => $message,
+            'status'          => $status,
+            'request_id'      => $reqId,
+            'correlation_id'  => $corrId,
+        ], $status);
+
+        // Trả kèm header ID
+        return $json->header('X-Request-Id', $reqId)
+                    ->header('X-Correlation-Id', $corrId);
     }
+
+    // Non-JSON: dùng render mặc định rồi gắn header
+    $response = parent::render($request, $e);
+    $response->headers->set('X-Request-Id', $reqId);
+    $response->headers->set('X-Correlation-Id', $corrId);
+    return $response;
+}
+
 }

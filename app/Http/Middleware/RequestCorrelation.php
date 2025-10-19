@@ -2,30 +2,44 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Correlation;
 use Closure;
-use Illuminate\Support\Str;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
+/**
+ * Middleware đầu vào:
+ * - Nhận X-Request-Id / X-Correlation-Id nếu client gửi, hoặc tự sinh (UUIDv4).
+ * - Đặt vào Correlation + Log::withContext để mọi log trong request có ID.
+ * - Thêm header X-Request-Id / X-Correlation-Id vào response trả về.
+ */
 class RequestCorrelation
 {
-    public function handle($request, Closure $next)
+    public function handle(Request $request, Closure $next)
     {
-        $rid = $request->header('X-Request-ID') ?: (string) Str::uuid();
-        $trace = $request->header('traceparent')
-            ?: sprintf('00-%s-0000000000000000-01', str_replace('-', '', (string) Str::uuid()));
+        // 1) Lấy từ header nếu có, nếu không sinh mới
+        $reqId = $request->headers->get('X-Request-Id') ?? (string) Str::uuid();
+        $corrId = $request->headers->get('X-Correlation-Id') ?? $reqId;
 
-        $request->headers->set('X-Request-ID', $rid);
-        $request->headers->set('traceparent',  $trace);
+        // 2) Lưu vào Correlation (toàn app dùng)
+        Correlation::set($reqId, $corrId);
 
-        Log::info('IN', ['path' => $request->path(), 'rid' => $rid, 'trace' => $trace]);
+        // 3) Đưa vào log context (mọi Log::info/err... sẽ có kèm ID)
+        Log::withContext([
+            'request_id'     => $reqId,
+            'correlation_id' => $corrId,
+            'path'           => $request->path(),
+            'method'         => $request->method(),
+        ]);
 
-        $resp = $next($request);
+        // 4) Chạy tiếp chuỗi middleware/controller
+        $response = $next($request);
 
-        $resp->headers->set('X-Request-ID', $rid);
-        $resp->headers->set('traceparent',  $trace);
+        // 5) Gắn header ra cho client/dev tools
+        $response->headers->set('X-Request-Id', $reqId);
+        $response->headers->set('X-Correlation-Id', $corrId);
 
-        Log::info('OUT', ['status' => $resp->getStatusCode(), 'rid' => $rid]);
-
-        return $resp;
+        return $response;
     }
 }

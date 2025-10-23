@@ -1,4 +1,5 @@
 // app/Events/OrderCreated.php
+<?php
 class OrderCreated
 {
     public function __construct(

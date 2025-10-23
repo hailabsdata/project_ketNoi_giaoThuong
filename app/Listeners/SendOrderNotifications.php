@@ -2,15 +2,18 @@
 // app/Listeners/SendOrderNotifications.php
 namespace App\Listeners;
 
+// <<<--- THÊM DÒNG NÀY
 use App\Events\OrderCreated;
+use App\Events\Orders\OrderCreated as OrdersOrderCreated;
 use App\Events\PaymentSucceeded;
 use App\Events\ShipmentCreated;
-use App\Models\User;
+use App\Models\User; // Đảm bảo bạn đã import User model
 use App\Notifications\OrderStatusChanged;
 use App\Notifications\ShipmentCreatedNotification;
 use App\Services\Notification\NotificationBridge;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Log; // Đảm bảo đã import Log
+use OrderCreated as GlobalOrderCreated;
 
 class SendOrderNotifications implements ShouldQueue
 {
@@ -18,99 +21,72 @@ class SendOrderNotifications implements ShouldQueue
 
     public function handle($event): void
     {
-        // Khôi phục correlation context từ event
-        $context = $event->getTraceContext();
-        
-        Log::info('SendOrderNotifications Listener Started', $context);
-        
+        // <<<--- BỎ DÒNG NÀY VÀ KHÔNG CẦN TRUYỀN $context NỮA
+        // $context = $event->getTraceContext();
+
+        // Log::info('SendOrderNotifications Listener Started', $context);
+        Log::info('SendOrderNotifications Listener Started'); // Context tự động thêm vào
+
         try {
             switch (true) {
                 case $event instanceof PaymentSucceeded:
-                    $this->handlePaymentSucceeded($event, $context);
+                    // <<<--- Bỏ $context
+                    $this->handlePaymentSucceeded($event);
                     break;
 
                 case $event instanceof ShipmentCreated:
-                    $this->handleShipmentCreated($event, $context);
+                    // <<<--- Bỏ $context
+                    $this->handleShipmentCreated($event);
                     break;
 
-                case $event instanceof OrderCreated:
-                    $this->handleOrderCreated($event, $context);
+                case $event instanceof OrdersOrderCreated:
+                     // <<<--- Bỏ $context
+                    $this->handleOrderCreated($event);
                     break;
             }
-            
-            Log::info('SendOrderNotifications Listener Completed', $context);
-            
+
+            // <<<--- Bỏ $context
+            Log::info('SendOrderNotifications Listener Completed');
+
         } catch (\Exception $e) {
-            Log::error('SendOrderNotifications Listener Failed', array_merge(
-                $context,
-                [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]
-            ));
+             // Log::error tự động lấy context hiện tại
+            Log::error('SendOrderNotifications Listener Failed', [
+                'error' => $e->getMessage(),
+                // Không cần getTraceAsString() nếu bạn log cả exception
+                // 'trace' => $e->getTraceAsString(),
+                'exception' => $e, // Log cả object exception để xem chi tiết hơn
+            ]);
             throw $e;
         }
     }
-    
-    private function handlePaymentSucceeded($event, array $context): void
+
+    // <<<--- Bỏ $context khỏi tham số
+    private function handlePaymentSucceeded($event): void
     {
         // TODO: Get buyer from order
         // $buyer = User::find(...);
         // $this->bridge->to($buyer, new OrderStatusChanged(...));
-        
-        Log::info('Payment notification sent', $context);
+
+        // <<<--- Bỏ $context
+        Log::info('Payment notification sent');
     }
-    
-    private function handleShipmentCreated($event, array $context): void
+
+    // <<<--- Bỏ $context khỏi tham số
+    private function handleShipmentCreated($event): void
     {
         // TODO: Get buyer from order
         // $buyer = User::find(...);
         // $this->bridge->to($buyer, new ShipmentCreatedNotification(...));
-        
-        Log::info('Shipment notification sent', $context);
+
+        // <<<--- Bỏ $context
+        Log::info('Shipment notification sent');
     }
-    
-    private function handleOrderCreated($event, array $context): void
+
+     // <<<--- Bỏ $context khỏi tham số
+    private function handleOrderCreated($event): void
     {
         // TODO: Send order created notification
-        Log::info('Order created notification sent', $context);
-    }
-}
-
-// app/Listeners/UpdateReports.php
-namespace App\Listeners;
-
-use App\Events\OrderCompleted;
-use App\Jobs\IncrementReportCounters;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Support\Facades\Log;
-
-class UpdateReports implements ShouldQueue
-{
-    public function handle(OrderCompleted $event): void
-    {
-        $context = $event->getTraceContext();
-        
-        Log::info('UpdateReports Listener Started', $context);
-        
-        try {
-            // Dispatch Job với correlation ID
-            IncrementReportCounters::dispatch(
-                orderId: $event->orderId,
-                amount: $event->total
-            );
-            
-            Log::info('IncrementReportCounters Job Dispatched', $context);
-            
-        } catch (\Exception $e) {
-            Log::error('UpdateReports Listener Failed', array_merge(
-                $context,
-                [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]
-            ));
-            throw $e;
-        }
+        // <<<--- Bỏ $context
+        Log::info('Order created notification sent');
     }
 }

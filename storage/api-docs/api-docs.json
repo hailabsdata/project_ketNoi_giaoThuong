@@ -1,0 +1,219 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "KetNoiGiaoThuong API",
+        "description": "API Documentation - Trade Connection Platform",
+        "version": "1.0.0"
+    },
+    "servers": [{"url": "http://127.0.0.1:8000"}],
+    "paths": {
+        "/api/auth/register": {
+            "post": {
+                "tags": ["Authentication"],
+                "summary": "Đăng ký tài khoản",
+                "requestBody": {
+                    "required": true,
+                    "content": {"application/json": {"schema": {"required": ["full_name", "email", "password", "password_confirmation"], "properties": {"full_name": {"type": "string", "example": "Trương Minh Nhựt"}, "email": {"type": "string", "example": "user@example.com"}, "password": {"type": "string", "example": "password123"}, "password_confirmation": {"type": "string", "example": "password123"}}}}}
+                },
+                "responses": {"201": {"description": "Account created"}, "400": {"description": "Thiếu hoặc sai định dạng dữ liệu"}, "409": {"description": "Email đã được sử dụng"}, "500": {"description": "Lỗi máy chủ"}}
+            }
+        },
+        "/api/auth/verify-email": {
+            "post": {
+                "tags": ["Authentication"],
+                "summary": "Xác thực Email/OTP",
+                "requestBody": {"required": true, "content": {"application/json": {"schema": {"required": ["email", "otp_code"], "properties": {"email": {"type": "string"}, "otp_code": {"type": "string", "example": "123456"}}}}}},
+                "responses": {"200": {"description": "Verified"}, "400": {"description": "Thiếu email hoặc OTP"}, "401": {"description": "OTP không hợp lệ/đã sử dụng/hết hạn"}, "404": {"description": "Tài khoản không tồn tại"}, "500": {"description": "Lỗi máy chủ"}}
+            }
+        },
+        "/api/auth/resend-verification-otp": {
+            "post": {
+                "tags": ["Authentication"],
+                "summary": "Gửi lại OTP xác thực email",
+                "requestBody": {"required": true, "content": {"application/json": {"schema": {"required": ["email"], "properties": {"email": {"type": "string", "example": "user@example.com"}}}}}},
+                "responses": {"200": {"description": "OTP mới đã được gửi"}, "400": {"description": "Email đã được xác thực/Thiếu email"}, "404": {"description": "Tài khoản không tồn tại"}, "429": {"description": "Quá nhiều yêu cầu (tối đa 5/phút)"}, "500": {"description": "Lỗi gửi email"}}
+            }
+        },
+        "/api/auth/login": {
+            "post": {
+                "tags": ["Authentication"],
+                "summary": "Đăng nhập",
+                "requestBody": {"required": true, "content": {"application/json": {"schema": {"required": ["email", "password"], "properties": {"email": {"type": "string"}, "password": {"type": "string"}}}}}},
+                "responses": {"200": {"description": "Login success"}, "400": {"description": "Thiếu email/password"}, "401": {"description": "Sai thông tin"}, "403": {"description": "Tài khoản khóa/chưa xác thực"}, "500": {"description": "Lỗi máy chủ"}}
+            }
+        },
+        "/api/auth/refresh": {
+            "post": {
+                "tags": ["Authentication"],
+                "summary": "Làm mới Token",
+                "requestBody": {"required": true, "content": {"application/json": {"schema": {"required": ["refresh_token"], "properties": {"refresh_token": {"type": "string"}}}}}},
+                "responses": {"200": {"description": "OK"}, "400": {"description": "Thiếu Refresh Token"}, "401": {"description": "Token không hợp lệ/hết hạn"}, "500": {"description": "Lỗi máy chủ"}}
+            }
+        },
+        "/api/auth/forgot-password": {
+            "post": {
+                "tags": ["Authentication"],
+                "summary": "Quên mật khẩu",
+                "requestBody": {"required": true, "content": {"application/json": {"schema": {"required": ["email"], "properties": {"email": {"type": "string"}}}}}},
+                "responses": {"200": {"description": "OTP sent"}, "400": {"description": "Thiếu email"}, "404": {"description": "Không tìm thấy user"}, "500": {"description": "Lỗi máy chủ"}}
+            }
+        },
+        "/api/auth/reset-password": {
+            "post": {
+                "tags": ["Authentication"],
+                "summary": "Đặt lại mật khẩu",
+                "requestBody": {"required": true, "content": {"application/json": {"schema": {"required": ["email", "otp_code", "password", "password_confirmation"], "properties": {"email": {"type": "string"}, "otp_code": {"type": "string", "example": "123456"}, "password": {"type": "string"}, "password_confirmation": {"type": "string"}}}}}},
+                "responses": {"200": {"description": "Reset success"}, "400": {"description": "Sai định dạng"}, "401": {"description": "OTP không hợp lệ/đã sử dụng/hết hạn"}, "404": {"description": "User không tồn tại"}, "500": {"description": "Lỗi máy chủ"}}
+            }
+        },
+        "/api/auth/logout": {
+            "post": {
+                "tags": ["Authentication"],
+                "summary": "Đăng xuất",
+                "security": [{"bearerAuth": []}],
+                "requestBody": {"required": true, "content": {"application/json": {"schema": {"required": ["refresh_token"], "properties": {"refresh_token": {"type": "string"}}}}}},
+                "responses": {"200": {"description": "Logged out"}, "401": {"description": "Token không hợp lệ"}, "500": {"description": "Lỗi máy chủ"}}
+            }
+        },
+        "/api/identity/profile": {
+            "get": {
+                "tags": ["Identity"], 
+                "summary": "Lấy thông tin hồ sơ người dùng", 
+                "security": [{"bearerAuth": []}], 
+                "responses": {
+                    "200": {"description": "Thành công"}, 
+                    "401": {"description": "Chưa đăng nhập hoặc token không hợp lệ"}, 
+                    "404": {"description": "Không tìm thấy thông tin người dùng"}, 
+                    "500": {"description": "Lỗi máy chủ nội bộ"}
+                }
+            },
+            "put": {
+                "tags": ["Identity"], 
+                "summary": "Cập nhật thông tin hồ sơ", 
+                "security": [{"bearerAuth": []}], 
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "identity_type": {"type": "string", "enum": ["personal", "business"]}, 
+                                    "full_name": {"type": "string"}, 
+                                    "business_name": {"type": "string"}, 
+                                    "address": {"type": "string"}, 
+                                    "phone": {"type": "string"}
+                                }
+                            }
+                        }
+                    }
+                }, 
+                "responses": {
+                    "200": {"description": "Cập nhật thành công"}, 
+                    "400": {"description": "Dữ liệu đầu vào không hợp lệ"}, 
+                    "401": {"description": "Người dùng chưa xác thực"}, 
+                    "500": {"description": "Lỗi máy chủ"}
+                }
+            }
+        },
+        "/api/identity/verify-request": {
+            "post": {
+                "tags": ["Identity"], 
+                "summary": "Gửi yêu cầu xác minh doanh nghiệp", 
+                "security": [{"bearerAuth": []}], 
+                "requestBody": {
+                    "required": true, 
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": ["document_type", "document_url"], 
+                                "properties": {
+                                    "document_type": {"type": "string", "enum": ["id_card", "business_license", "tax_code"]}, 
+                                    "document_url": {"type": "string"}
+                                }
+                            }
+                        }
+                    }
+                }, 
+                "responses": {
+                    "201": {"description": "Yêu cầu đã được gửi thành công"}, 
+                    "400": {"description": "Thiếu thông tin bắt buộc"}, 
+                    "401": {"description": "Người dùng chưa đăng nhập"}, 
+                    "409": {"description": "Doanh nghiệp đã được xác minh hoặc đang chờ duyệt"}, 
+                    "500": {"description": "Lỗi máy chủ"}
+                }
+            }
+        },
+        "/api/identity/verify-history": {
+            "get": {
+                "tags": ["Identity"], 
+                "summary": "Xem lịch sử xác minh doanh nghiệp", 
+                "security": [{"bearerAuth": []}], 
+                "responses": {
+                    "200": {"description": "Danh sách lịch sử xác minh"}, 
+                    "401": {"description": "Chưa đăng nhập"}, 
+                    "500": {"description": "Lỗi máy chủ"}
+                }
+            }
+        },
+        "/api/identity/verify-request/{id}/approve": {
+            "put": {
+                "tags": ["Identity - Admin"], 
+                "summary": "Duyệt yêu cầu xác minh (dành cho Quản trị viên)", 
+                "security": [{"bearerAuth": []}], 
+                "parameters": [
+                    {"name": "id", "in": "path", "required": true, "schema": {"type": "integer"}}
+                ], 
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "admin_note": {"type": "string", "maxLength": 500}
+                                }
+                            }
+                        }
+                    }
+                }, 
+                "responses": {
+                    "200": {"description": "Yêu cầu đã được duyệt"}, 
+                    "400": {"description": "Dữ liệu không hợp lệ"}, 
+                    "401": {"description": "Chưa đăng nhập"}, 
+                    "403": {"description": "Người dùng không có quyền duyệt"}, 
+                    "404": {"description": "Không tìm thấy yêu cầu xác minh"}, 
+                    "500": {"description": "Lỗi máy chủ"}
+                }
+            }
+        },
+        "/api/identity/verify-request/{id}/reject": {
+            "put": {
+                "tags": ["Identity - Admin"], 
+                "summary": "Từ chối yêu cầu xác minh (dành cho Quản trị viên)", 
+                "security": [{"bearerAuth": []}], 
+                "parameters": [
+                    {"name": "id", "in": "path", "required": true, "schema": {"type": "integer"}}
+                ], 
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": ["admin_note"],
+                                "properties": {
+                                    "admin_note": {"type": "string", "maxLength": 500, "description": "Lý do từ chối (bắt buộc)"}
+                                }
+                            }
+                        }
+                    }
+                }, 
+                "responses": {
+                    "200": {"description": "Yêu cầu đã bị từ chối"}, 
+                    "400": {"description": "Thiếu lý do từ chối hoặc dữ liệu không hợp lệ"}, 
+                    "401": {"description": "Chưa đăng nhập"}, 
+                    "403": {"description": "Người dùng không có quyền từ chối"}, 
+                    "404": {"description": "Không tìm thấy yêu cầu xác minh"}, 
+                    "500": {"description": "Lỗi máy chủ"}
+                }
+            }
+        }
+    },
+    "components": {"securitySchemes": {"bearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}}}
+}

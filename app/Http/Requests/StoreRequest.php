@@ -27,16 +27,16 @@ class StoreRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required' => 'Tên cửa hàng là bắt buộc.',
-            'name.unique' => 'Tên cửa hàng đã tồn tại.',
-            'owner_name.required' => 'Tên chủ cửa hàng là bắt buộc.',
-            'email.required' => 'Email là bắt buộc.',
-            'email.email' => 'Email không đúng định dạng.',
-            'email.unique' => 'Email đã tồn tại.',
-            'phone.required' => 'Số điện thoại là bắt buộc.',
-            'phone.size' => 'Số điện thoại phải có 10 ký tự.',
-            'phone.regex' => 'Số điện thoại chỉ được chứa ký tự số.',
-            'address.required' => 'Địa chỉ là bắt buộc.',
+            'name.required' => 'Ten cua hang la bat buoc.',
+            'name.unique' => 'Ten cua hang da ton tai.',
+            'owner_name.required' => 'Ten chu cua hang la bat buoc.',
+            'email.required' => 'Email la bat buoc.',
+            'email.email' => 'Email khong dung dinh dang.',
+            'email.unique' => 'Email da ton tai.',
+            'phone.required' => 'So dien thoai la bat buoc.',
+            'phone.size' => 'So dien thoai phai co 10 ky tu.',
+            'phone.regex' => 'So dien thoai chi duoc chua ky tu so.',
+            'address.required' => 'Dia chi la bat buoc.',
         ];
     }
 }

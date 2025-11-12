@@ -24,4 +24,26 @@ Route::prefix('stores')->group(function () {
     Route::get('/{store}', [StoreController::class, 'show']); // GET /api/stores/{id}
     Route::put('/{store}', [StoreController::class, 'update']); // PUT /api/stores/{id}
     Route::delete('/{store}', [StoreController::class, 'destroy']); // DELETE /api/stores/{id}
+    Route::post('/stores-test', function (Request $request) {
+    try {
+        $store = \App\Models\Store::create([
+            'name' => $request->name,
+            'owner_name' => $request->owner_name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'address' => $request->address,
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $store
+        ], 201);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ], 500);
+    }
+});
 });

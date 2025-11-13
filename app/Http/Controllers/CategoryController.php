@@ -45,7 +45,7 @@ class CategoryController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Lỗi máy chủ nội bộ'
+                'message' => $e->getMessage(),
             ], 500);
         }
     }

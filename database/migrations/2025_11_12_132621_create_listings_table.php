@@ -17,6 +17,8 @@ return new class extends Migration
             $table->foreignId('store_id')->constrained()->onDelete('cascade');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+            $table->softDeletes(); 
+      
             
             // Indexes for performance
             $table->index('title');

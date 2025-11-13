@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ListingController;
+use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\StoreController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -50,4 +51,14 @@ Route::prefix('listings')->group(function () {
     Route::get('/{listing}', [ListingController::class, 'show']);
     Route::put('/{listing}', [ListingController::class, 'update']);
     Route::delete('/{listing}', [ListingController::class, 'destroy']);
+});
+// Promotion routes
+Route::prefix('media/promotion')->group(function () {
+    Route::get('/', [PromotionController::class, 'index']); // GET /api/media/promotion
+    Route::get('/active', [PromotionController::class, 'activePromotions']); // GET /api/media/promotion/active
+    Route::post('/', [PromotionController::class, 'store']); // POST /api/media/promotion
+    Route::get('/{id}', [PromotionController::class, 'show']); // GET /api/media/promotion/{id}
+    Route::put('/{id}', [PromotionController::class, 'update']); // PUT /api/media/promotion/{id}
+    Route::delete('/{id}', [PromotionController::class, 'destroy']); // DELETE /api/media/promotion/{id}
+    Route::patch('/{id}/featured', [PromotionController::class, 'updateFeatured']); // PATCH /api/media/promotion/{id}/featured
 });

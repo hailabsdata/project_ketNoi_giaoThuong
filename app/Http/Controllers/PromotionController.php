@@ -59,8 +59,8 @@ class PromotionController extends Controller
 
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
-                'message' => 'Lỗi máy chủ nội bộ'
+                'status' => 'error',
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
@@ -87,8 +87,8 @@ class PromotionController extends Controller
 
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
-                'message' => 'Lỗi máy chủ nội bộ'
+                'status' => 'error',
+                'message' => $e->getMessage(),
             ], 500);
         }
     }

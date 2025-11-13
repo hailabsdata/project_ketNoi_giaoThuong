@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('promo_code')->unique()->nullable(); // Mã khuyến mãi
             $table->boolean('is_featured')->default(false);
             $table->timestamps();
-            
+          
             // Indexes for performance
             $table->index('status');
             $table->index('start_date');

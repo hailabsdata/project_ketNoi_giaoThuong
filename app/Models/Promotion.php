@@ -9,7 +9,7 @@ use Carbon\Carbon;
 
 class Promotion extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
     protected $fillable = [
         'title',

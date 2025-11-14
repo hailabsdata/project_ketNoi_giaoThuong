@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\UserToken;
 use App\Models\OtpCode;
+use App\Models\LoginHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -238,7 +239,22 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
+        $ipAddress = $request->ip();
+        $userAgent = $request->userAgent();
+
         if (!$token = auth('api')->attempt($credentials)) {
+            // Log failed login attempt if user exists
+            $user = User::where('email', $request->email)->first();
+            if ($user) {
+                LoginHistory::create([
+                    'user_id' => $user->id,
+                    'ip_address' => $ipAddress,
+                    'user_agent' => $userAgent,
+                    'success' => false,
+                    'logged_in_at' => now(),
+                ]);
+            }
+
             return response()->json(['status' => 'error', 'message' => 'Invalid email or password'], 401);
         }
 
@@ -246,15 +262,40 @@ class AuthController extends Controller
         $user = auth('api')->user();
 
         if (!$user->is_verified) {
+            LoginHistory::create([
+                'user_id' => $user->id,
+                'ip_address' => $ipAddress,
+                'user_agent' => $userAgent,
+                'success' => false,
+                'logged_in_at' => now(),
+            ]);
+
             return response()->json(['status' => 'error', 'message' => 'Please verify your email first'], 403);
         }
 
         if ($user->status !== 'active' || !$user->is_active) {
+            LoginHistory::create([
+                'user_id' => $user->id,
+                'ip_address' => $ipAddress,
+                'user_agent' => $userAgent,
+                'success' => false,
+                'logged_in_at' => now(),
+            ]);
+
             return response()->json(['status' => 'error', 'message' => 'Account suspended or inactive'], 403);
         }
 
         $user->last_login_at = now();
         $user->save();
+
+        // Log successful login
+        LoginHistory::create([
+            'user_id' => $user->id,
+            'ip_address' => $ipAddress,
+            'user_agent' => $userAgent,
+            'success' => true,
+            'logged_in_at' => now(),
+        ]);
 
         $refreshToken = hash('sha256', Str::random(64));
         UserToken::create([

@@ -213,6 +213,307 @@
                     "500": {"description": "Lỗi máy chủ"}
                 }
             }
+        },
+        "/api/moderation/report": {
+            "post": {
+                "tags": ["Moderation"],
+                "summary": "Gửi báo cáo vi phạm",
+                "security": [{"bearerAuth": []}],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": ["reason"],
+                                "properties": {
+                                    "target_user_id": {"type": "integer", "description": "ID user bị báo cáo (chọn 1 trong 2)"},
+                                    "target_post_id": {"type": "integer", "description": "ID bài viết bị báo cáo (chọn 1 trong 2)"},
+                                    "reason": {"type": "string", "minLength": 10, "maxLength": 255, "example": "Nội dung spam hoặc lừa đảo"}
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {"description": "Báo cáo đã được gửi"},
+                    "400": {"description": "Dữ liệu không hợp lệ hoặc không thể tự báo cáo"},
+                    "409": {"description": "Đã báo cáo trong vòng 24h"},
+                    "500": {"description": "Lỗi máy chủ"}
+                }
+            }
+        },
+        "/api/moderation/my-reports": {
+            "get": {
+                "tags": ["Moderation"],
+                "summary": "Xem báo cáo đã gửi",
+                "security": [{"bearerAuth": []}],
+                "responses": {
+                    "200": {"description": "Danh sách báo cáo của user"},
+                    "500": {"description": "Lỗi máy chủ"}
+                }
+            }
+        },
+        "/api/moderation/reports": {
+            "get": {
+                "tags": ["Moderation - Admin"],
+                "summary": "Danh sách tất cả báo cáo (Admin)",
+                "security": [{"bearerAuth": []}],
+                "parameters": [
+                    {"name": "status", "in": "query", "schema": {"type": "string", "enum": ["pending", "reviewed", "action_taken", "dismissed"]}},
+                    {"name": "target_type", "in": "query", "schema": {"type": "string", "enum": ["user", "post"]}},
+                    {"name": "search", "in": "query", "schema": {"type": "string", "description": "Tìm theo tên user"}}
+                ],
+                "responses": {
+                    "200": {"description": "Danh sách báo cáo với phân trang"},
+                    "403": {"description": "Không có quyền admin"},
+                    "500": {"description": "Lỗi máy chủ"}
+                }
+            }
+        },
+        "/api/moderation/reports/{id}": {
+            "get": {
+                "tags": ["Moderation - Admin"],
+                "summary": "Chi tiết báo cáo (Admin)",
+                "security": [{"bearerAuth": []}],
+                "parameters": [
+                    {"name": "id", "in": "path", "required": true, "schema": {"type": "integer"}}
+                ],
+                "responses": {
+                    "200": {"description": "Chi tiết báo cáo"},
+                    "404": {"description": "Không tìm thấy báo cáo"},
+                    "403": {"description": "Không có quyền admin"},
+                    "500": {"description": "Lỗi máy chủ"}
+                }
+            },
+            "delete": {
+                "tags": ["Moderation - Admin"],
+                "summary": "Xóa báo cáo (Admin)",
+                "security": [{"bearerAuth": []}],
+                "parameters": [
+                    {"name": "id", "in": "path", "required": true, "schema": {"type": "integer"}}
+                ],
+                "responses": {
+                    "200": {"description": "Đã xóa báo cáo"},
+                    "404": {"description": "Không tìm thấy báo cáo"},
+                    "403": {"description": "Không có quyền admin"},
+                    "500": {"description": "Lỗi máy chủ"}
+                }
+            }
+        },
+        "/api/moderation/reports/{id}/resolve": {
+            "put": {
+                "tags": ["Moderation - Admin"],
+                "summary": "Xử lý báo cáo (Admin)",
+                "security": [{"bearerAuth": []}],
+                "parameters": [
+                    {"name": "id", "in": "path", "required": true, "schema": {"type": "integer"}}
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": ["action"],
+                                "properties": {
+                                    "action": {"type": "string", "enum": ["action_taken", "dismissed"], "description": "Hành động: xử lý vi phạm hoặc bỏ qua"},
+                                    "admin_note": {"type": "string", "maxLength": 500, "description": "Ghi chú của admin"}
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {"description": "Đã xử lý báo cáo"},
+                    "400": {"description": "Dữ liệu không hợp lệ"},
+                    "404": {"description": "Không tìm thấy báo cáo"},
+                    "409": {"description": "Báo cáo đã được xử lý trước đó"},
+                    "403": {"description": "Không có quyền admin"},
+                    "500": {"description": "Lỗi máy chủ"}
+                }
+            }
+        },
+        "/api/identity/verify-requests": {
+            "get": {
+                "tags": ["Identity - Admin"],
+                "summary": "Admin xem danh sách tất cả yêu cầu xác minh danh tính",
+                "security": [{"bearerAuth": []}],
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": ["pending", "approved", "rejected"]
+                        }
+                    },
+                    {
+                        "name": "document_type",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": ["id_card", "business_license", "tax_code"]
+                        }
+                    },
+                    {
+                        "name": "user_id",
+                        "in": "query",
+                        "schema": { "type": "integer" }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "description": "Tìm theo tên hoặc email người dùng"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "schema": { "type": "string", "format": "date-time" },
+                        "description": "Thời gian bắt đầu (created_at >= from)"
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "schema": { "type": "string", "format": "date-time" },
+                        "description": "Thời gian kết thúc (created_at <= to)"
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 20,
+                            "maximum": 100
+                        },
+                        "description": "Số bản ghi mỗi trang"
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Danh sách yêu cầu xác minh (có phân trang)" },
+                    "401": { "description": "Chưa đăng nhập" },
+                    "403": { "description": "Người dùng không có quyền admin" },
+                    "500": { "description": "Lỗi máy chủ" }
+                }
+            }
+        },
+
+        "/api/identity/verify-requests/{id}": {
+            "get": {
+                "tags": ["Identity - Admin"],
+                "summary": "Admin xem chi tiết một yêu cầu xác minh",
+                "security": [{"bearerAuth": []}],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "integer" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Chi tiết yêu cầu xác minh" },
+                    "401": { "description": "Chưa đăng nhập" },
+                    "403": { "description": "Người dùng không có quyền admin" },
+                    "404": { "description": "Không tìm thấy yêu cầu xác minh" },
+                    "500": { "description": "Lỗi máy chủ" }
+                }
+            }
+        },
+        "/api/login-history": {
+            "get": {
+                "tags": ["Login History"],
+                "summary": "Xem lịch sử đăng nhập của chính mình",
+                "security": [{"bearerAuth": []}],
+                "parameters": [
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 15, "maximum": 100 },
+                        "description": "Số bản ghi mỗi trang"
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Danh sách lịch sử đăng nhập của user hiện tại (có phân trang)" },
+                    "401": { "description": "Chưa đăng nhập" },
+                    "500": { "description": "Lỗi máy chủ" }
+                }
+            }
+        },
+        "/api/admin/login-history": {
+            "get": {
+                "tags": ["Login History - Admin"],
+                "summary": "Admin xem lịch sử đăng nhập của tất cả người dùng",
+                "security": [{"bearerAuth": []}],
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "query",
+                        "schema": { "type": "integer" },
+                        "description": "Lọc theo ID user"
+                    },
+                    {
+                        "name": "success",
+                        "in": "query",
+                        "schema": { "type": "boolean" },
+                        "description": "Lọc theo kết quả đăng nhập (true/false)"
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "schema": { "type": "string", "format": "date-time" },
+                        "description": "Thời gian bắt đầu (logged_in_at >= from)"
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "schema": { "type": "string", "format": "date-time" },
+                        "description": "Thời gian kết thúc (logged_in_at <= to)"
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 20, "maximum": 100 },
+                        "description": "Số bản ghi mỗi trang"
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Danh sách lịch sử đăng nhập của tất cả user (có phân trang)" },
+                    "401": { "description": "Chưa đăng nhập" },
+                    "403": { "description": "Không có quyền admin" },
+                    "500": { "description": "Lỗi máy chủ" }
+                }
+            }
+        },
+        "/api/admin/users/{userId}/login-history": {
+            "get": {
+                "tags": ["Login History - Admin"],
+                "summary": "Admin xem lịch sử đăng nhập của một user cụ thể",
+                "security": [{"bearerAuth": []}],
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "integer" },
+                        "description": "ID user cần xem"
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 20, "maximum": 100 },
+                        "description": "Số bản ghi mỗi trang"
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Danh sách lịch sử đăng nhập của user (có phân trang)" },
+                    "401": { "description": "Chưa đăng nhập" },
+                    "403": { "description": "Không có quyền admin" },
+                    "404": { "description": "Không tìm thấy user" },
+                    "500": { "description": "Lỗi máy chủ" }
+                }
+            }
         }
     },
     "components": {"securitySchemes": {"bearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}}}

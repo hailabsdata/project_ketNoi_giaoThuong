@@ -4,22 +4,27 @@ API Backend cho nền tảng kết nối giao thương doanh nghiệp, xây dự
 
 ## ✨ Tính năng
 
-### 🔐 Authentication (JWT)
+- **Authentication (JWT)**
+  - Đăng ký tài khoản, xác thực email bằng OTP.
+  - Đăng nhập với Access Token + Refresh Token.
+  - Làm mới access token, quên mật khẩu, đặt lại mật khẩu.
+  - Đăng xuất, thu hồi refresh token.
 
--   ✅ Đăng ký tài khoản với xác thực email qua OTP
--   ✅ Đăng nhập với Access Token & Refresh Token
--   ✅ Làm mới token (Refresh Token)
--   ✅ Quên mật khẩu với OTP qua email
--   ✅ Đặt lại mật khẩu
--   ✅ Gửi lại OTP khi hết hạn
--   ✅ Đăng xuất (invalidate tokens)
+- **Identity Management (KYC)**
+  - Người dùng xem/cập nhật hồ sơ cá nhân/doanh nghiệp.
+  - Gửi yêu cầu xác minh danh tính (đính kèm tài liệu).
+  - Xem lịch sử các yêu cầu xác minh của chính mình.
+  - Admin duyệt / từ chối yêu cầu xác minh.
+  - Admin xem danh sách & chi tiết mọi yêu cầu xác minh (có filter, phân trang).
 
-### 👤 Identity Management (KYC)
+- **Login History**
+  - Ghi log mỗi lần đăng nhập (thành công/thất bại) kèm IP, User-Agent.
+  - Người dùng xem lịch sử đăng nhập của chính mình.
+  - Admin xem lịch sử đăng nhập của tất cả user, hoặc theo từng user.
 
--   ✅ Xem và cập nhật hồ sơ cá nhân/doanh nghiệp
--   ✅ Gửi yêu cầu xác minh doanh nghiệp (Business Verification)
--   ✅ Admin duyệt/từ chối yêu cầu xác minh
--   ✅ Xem lịch sử xác minh
+- **Moderation**
+  - Người dùng gửi báo cáo vi phạm (user/bài viết).
+  - Admin xem, xử lý, và quản lý các báo cáo.
 
 ### 🔒 Security Features
 
@@ -29,7 +34,6 @@ API Backend cho nền tảng kết nối giao thương doanh nghiệp, xây dự
 -   Role-based authorization (Admin middleware)
 -   Password hashing với bcrypt
 -   Email verification required
-
 ---
 
 ## 🛠 Công nghệ sử dụng
@@ -148,61 +152,99 @@ Server chạy tại: `http://127.0.0.1:8000`
 
 Truy cập: **http://127.0.0.1:8000/api/documentation**
 
-### Authentication Endpoints
+## Authentication Endpoints
 
-| Method | Endpoint                            | Description            | Rate Limit |
-| ------ | ----------------------------------- | ---------------------- | ---------- |
-| POST   | `/api/auth/register`                | Đăng ký tài khoản      | 5/min      |
-| POST   | `/api/auth/verify-email`            | Xác thực email với OTP | 5/min      |
-| POST   | `/api/auth/resend-verification-otp` | Gửi lại OTP xác thực   | 5/min      |
-| POST   | `/api/auth/login`                   | Đăng nhập              | -          |
-| POST   | `/api/auth/refresh`                 | Làm mới token          | -          |
-| POST   | `/api/auth/forgot-password`         | Quên mật khẩu          | 5/min      |
-| POST   | `/api/auth/reset-password`          | Đặt lại mật khẩu       | 5/min      |
-| POST   | `/api/auth/logout`                  | Đăng xuất              | -          |
+| Method | Endpoint                            | Mô tả                                           | Rate limit |
+| ------ | ----------------------------------- | ----------------------------------------------- | ---------- |
+| POST   | `/api/auth/register`                | Đăng ký tài khoản                               | 5/min      |
+| POST   | `/api/auth/verify-email`            | Xác thực email bằng OTP                         | 5/min      |
+| POST   | `/api/auth/resend-verification-otp` | Gửi lại OTP xác thực email                      | 5/min      |
+| POST   | `/api/auth/login`                   | Đăng nhập (trả về access + refresh token)       | 5/min      |
+| POST   | `/api/auth/refresh`                 | Làm mới access token bằng refresh token         | -          |
+| POST   | `/api/auth/forgot-password`         | Quên mật khẩu (gửi OTP/token qua email)         | 5/min      |
+| POST   | `/api/auth/reset-password`          | Đặt lại mật khẩu bằng OTP hoặc token            | 5/min      |
+| POST   | `/api/auth/logout`                  | Đăng xuất, thu hồi refresh token hiện tại       | -          |
 
-### Identity Endpoints
+---
 
-| Method | Endpoint                                    | Description          | Role  |
-| ------ | ------------------------------------------- | -------------------- | ----- |
-| GET    | `/api/identity/profile`                     | Lấy thông tin hồ sơ  | User  |
-| PUT    | `/api/identity/profile`                     | Cập nhật hồ sơ       | User  |
-| POST   | `/api/identity/verify-request`              | Gửi yêu cầu xác minh | User  |
-| GET    | `/api/identity/verify-history`              | Xem lịch sử xác minh | User  |
-| PUT    | `/api/identity/verify-request/{id}/approve` | Duyệt yêu cầu        | Admin |
-| PUT    | `/api/identity/verify-request/{id}/reject`  | Từ chối yêu cầu      | Admin |
+## Identity (KYC) Endpoints
 
+### User
 
-## 📁 Cấu trúc thư mục
+| Method | Endpoint                       | Mô tả                                              | Role |
+| ------ | ------------------------------ | -------------------------------------------------- | ---- |
+| GET    | `/api/identity/profile`        | Lấy thông tin hồ sơ danh tính của chính user       | User |
+| PUT    | `/api/identity/profile`        | Cập nhật hồ sơ danh tính                           | User |
+| POST   | `/api/identity/verify-request` | Gửi yêu cầu xác minh danh tính (tài liệu KYC)      | User |
+| GET    | `/api/identity/verify-history` | Xem lịch sử các yêu cầu xác minh đã gửi            | User |
 
+### Admin
+
+| Method | Endpoint                                    | Mô tả                                                           | Role  |
+| ------ | ------------------------------------------- | --------------------------------------------------------------- | ----- |
+| GET    | `/api/identity/verify-requests`             | Xem danh sách tất cả yêu cầu xác minh (filter, phân trang)      | Admin |
+| GET    | `/api/identity/verify-requests/{id}`        | Xem chi tiết 1 yêu cầu xác minh                                 | Admin |
+| PUT    | `/api/identity/verify-request/{id}/approve` | Duyệt yêu cầu xác minh                                          | Admin |
+| PUT    | `/api/identity/verify-request/{id}/reject`  | Từ chối yêu cầu xác minh (bắt buộc ghi chú lý do `admin_note`)  | Admin |
+
+---
+
+## Login History Endpoints
+
+### User
+
+| Method | Endpoint               | Mô tả                                                  | Role |
+| ------ | ---------------------- | ------------------------------------------------------ | ---- |
+| GET    | `/api/login-history`   | Xem lịch sử đăng nhập của chính user (có phân trang)   | User |
+
+### Admin
+
+| Method | Endpoint                                  | Mô tả                                                                 | Role  |
+| ------ | ----------------------------------------- | --------------------------------------------------------------------- | ----- |
+| GET    | `/api/admin/login-history`                | Xem lịch sử đăng nhập của tất cả user (filter theo user, thời gian…)  | Admin |
+| GET    | `/api/admin/users/{userId}/login-history` | Xem lịch sử đăng nhập của một user cụ thể                             | Admin |
+ 
+---
+
+## Moderation Endpoints (tóm tắt)
+
+| Method | Endpoint                               | Mô tả                                        | Role  |
+| ------ | -----------------------------------    | ------------------------------------------   | ----- |
+| POST   | `/api/moderation/report`               | Gửi báo cáo vi phạm (user hoặc bài viết)     | User  |
+| GET    | `/api/moderation/my-reports`           | Xem các báo cáo do chính mình gửi            | User  |
+| GET    | `/api/moderation/reports`              | Danh sách báo cáo (kèm filter, phân trang)   | Admin |
+| GET    | `/api/moderation/reports/{id}`         | Xem chi tiết một báo cáo                     | Admin |
+| PUT    | `/api/moderation/reports/{id}/resolve` | Xử lý báo cáo (action_taken / dismissed)     | Admin |
+| DELETE | `/api/moderation/reports/{id}`         | Xoá một báo cáo                              | Admin |
+
+---
+
+## Cấu trúc thư mục (rút gọn)
+
+```text
+app/
+  Http/
+    Controllers/
+      AuthController.php
+      IdentityController.php
+      AdminIdentityController.php
+      ModerationController.php
+      LoginHistoryController.php
+    Middleware/
+      Authenticate.php
+      CheckAdmin.php
+  Models/
+    User.php
+    UserIdentity.php
+    IdentityVerificationRequest.php
+    LoginHistory.php
+    UserToken.php
+    OtpCode.php
+database/
+  migrations/
+routes/
+  api.php
+storage/
+  api-docs/
+    api-docs.json   # Swagger/OpenAPI spec
 ```
-KetNoiGiaoThuong-Server/
-├── app/
-│   ├── Http/
-│   │   ├── Controllers/
-│   │   │   ├── AuthController.php          # JWT Authentication
-│   │   │   └── IdentityController.php      # Identity/KYC Management
-│   │   └── Middleware/
-│   │       └── CheckAdmin.php              # Admin authorization
-│   ├── Mail/
-│   │   ├── VerifyEmailMail.php
-│   │   └── PasswordResetOtpMail.php
-│   └── Models/
-│       ├── User.php
-│       ├── OtpCode.php
-│       ├── UserIdentity.php
-│       ├── UserToken.php
-│       └── IdentityVerificationRequest.php
-├── database/
-│   └── migrations/
-├── routes/
-│   └── api.php                             # API routes
-├── storage/
-│   ├── api-docs/
-│   │   └── api-docs.json                   # Swagger docs
-│   └── logs/
-└── .env
-```
-
-
-

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\UserIdentity;
 use App\Models\IdentityVerificationRequest;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -149,6 +150,14 @@ class IdentityController extends Controller
                 ['identity_status' => 'pending']
             );
 
+            Notification::create([
+                'user_id' => $user->id,
+                'title' => 'Yêu cầu xác minh danh tính đã được gửi',
+                'message' => 'Yêu cầu xác minh danh tính của bạn đang được xử lý. Vui lòng chờ admin xem xét.',
+                'type' => 'system',
+                'created_at' => now(),
+            ]);
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Verification request submitted successfully',
@@ -206,6 +215,14 @@ class IdentityController extends Controller
                 $identity->verified_at = now();
                 $identity->save();
             }
+
+            Notification::create([
+                'user_id' => $verifyRequest->user_id,
+                'title' => 'Yêu cầu xác minh danh tính đã được duyệt',
+                'message' => 'Hồ sơ danh tính của bạn đã được admin phê duyệt.',
+                'type' => 'system',
+                'created_at' => now(),
+            ]);
 
             return response()->json([
                 'status' => 'success',

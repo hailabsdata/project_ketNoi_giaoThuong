@@ -9,7 +9,7 @@ class AdminIdentityController extends Controller
 {
     /**
      * GET /api/identity/verify-requests
-     * Admin xem danh sA�ch tA�t cA? yA�u cA�u xA�c minh (cA3 filter + phA�n trang)
+     * Admin xem danh tất cả yêu cầu xác minh (có filter + phân trang)
      */
     public function getVerifyRequests(Request $request)
     {
@@ -70,7 +70,7 @@ class AdminIdentityController extends Controller
 
     /**
      * GET /api/identity/verify-requests/{id}
-     * Admin xem chi tiA�t mA�t yA�u cA�u xA�c minh
+     * Admin xem chi tiết một yêu cầu xác minh
      */
     public function getVerifyRequest($id)
     {

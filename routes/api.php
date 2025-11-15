@@ -7,6 +7,10 @@ use App\Http\Controllers\IdentityController;
 use App\Http\Controllers\ModerationController;
 use App\Http\Controllers\LoginHistoryController;
 use App\Http\Controllers\AdminIdentityController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PlanController;
+use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\DataExportController;
 
 
 /*
@@ -24,6 +28,10 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+
+// Public subscription plans
+Route::get('plans', [PlanController::class, 'index']);
+Route::get('plans/{id}', [PlanController::class, 'show'])->whereNumber('id');
 
 Route::prefix('auth')->group(function () {
     // Rate limit: 5 attempts per minute for sensitive endpoints
@@ -48,6 +56,34 @@ Route::middleware('auth:api')->get('login-history', [LoginHistoryController::cla
 Route::prefix('admin')->middleware(['auth:api', 'admin'])->group(function () {
     Route::get('login-history', [LoginHistoryController::class, 'adminIndex']);
     Route::get('users/{userId}/login-history', [LoginHistoryController::class, 'adminUserHistory']);
+});
+
+// Notifications (require auth)
+Route::prefix('notifications')->middleware('auth:api')->group(function () {
+    Route::get('/', [NotificationController::class, 'index']);
+    Route::get('{id}', [NotificationController::class, 'show'])->whereNumber('id');
+    Route::put('{id}/read', [NotificationController::class, 'markAsRead'])->whereNumber('id');
+    Route::put('read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::delete('delete-all', [NotificationController::class, 'destroyAll']);
+    Route::delete('{id}', [NotificationController::class, 'destroy'])->whereNumber('id');
+});
+
+// Subscriptions (require auth)
+Route::prefix('subscriptions')->middleware('auth:api')->group(function () {
+    Route::post('/', [SubscriptionController::class, 'subscribe']);
+    Route::put('{id}/renew', [SubscriptionController::class, 'renew'])->whereNumber('id');
+    Route::get('current', [SubscriptionController::class, 'current']);
+    Route::get('history', [SubscriptionController::class, 'history']);
+    Route::delete('{id}/cancel', [SubscriptionController::class, 'cancel'])->whereNumber('id');
+});
+
+// Data export (require auth)
+Route::prefix('data/export')->middleware('auth:api')->group(function () {
+    Route::post('request', [DataExportController::class, 'requestExport']);
+    Route::get('status/{id}', [DataExportController::class, 'status'])->whereNumber('id');
+    Route::get('download/{id}', [DataExportController::class, 'download'])->whereNumber('id');
+    Route::delete('cancel/{id}', [DataExportController::class, 'cancel'])->whereNumber('id');
+    Route::get('history', [DataExportController::class, 'history']);
 });
 
 // Identity Routes (require auth)

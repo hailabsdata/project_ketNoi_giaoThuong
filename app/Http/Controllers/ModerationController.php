@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ModerationReport;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 

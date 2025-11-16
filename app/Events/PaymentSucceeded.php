@@ -2,19 +2,24 @@
 
 namespace App\Events;
 
-use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
-
-/**
- * Sự kiện: thanh toán thành công cho 1 đơn.
- */
-class PaymentSucceeded
+class PaymentSucceeded extends BaseEvent
 {
-    use Dispatchable, SerializesModels;
-
     public function __construct(
-        public int $orderId,
-        public string $transactionId,
-        public float $paidAmount
-    ) {}
+        public string $paymentId,
+        public string $orderId,
+        public int $amountCents,
+        public string $provider
+    ) {
+        parent::__construct();
+    }
+
+    public function toArray(): array
+    {
+        return array_merge($this->basePayload(), [
+            'payment_id'   => $this->paymentId,
+            'order_id'     => $this->orderId,
+            'amount_cents' => $this->amountCents,
+            'provider'     => $this->provider,
+        ]);
+    }
 }

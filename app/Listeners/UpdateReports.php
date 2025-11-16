@@ -1,19 +1,22 @@
 <?php
-
 namespace App\Listeners;
 
-use App\Events\OrderCompleted;
+use App\Events\OrderCreated;
+use App\Events\PaymentSucceeded;
+use App\Events\ShipmentCreated;
 use App\Jobs\IncrementReportCounters;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
 class UpdateReports implements ShouldQueue
 {
-    public function handle(OrderCompleted $event): void
+    public function handle($event): void
     {
-        // đẩy Job để cập nhật thống kê (hàng đợi)
-        IncrementReportCounters::dispatch(
-            orderId: $event->orderId,
-            amount: $event->total
-        );
+        if ($event instanceof OrderCreated || $event instanceof PaymentSucceeded) {
+            IncrementReportCounters::dispatch(
+                orderId: $event->orderId,
+                amount: $event->total
+            );
+        }
+        // ShipmentCreated có thể không thay đổi doanh thu, nhưng bạn có thể log event ở bảng analytics (mục 4)
     }
 }

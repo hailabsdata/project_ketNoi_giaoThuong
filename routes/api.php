@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Models\User;
 use App\Events\UserRegistered;
+use App\Http\Controllers\Reports\ReportsController;
+use App\Http\Controllers\Tracking\TrackController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -65,3 +67,26 @@ Route::middleware(['auth:sanctum', 'admin', 'force.json', 'throttle:60,1'])
         RouteFacade::patch('/complaints/{id}/resolve', [\App\Http\Controllers\Admin\ComplaintAdminController::class, 'resolve']);
         RouteFacade::patch('/complaints/{id}/reject', [\App\Http\Controllers\Admin\ComplaintAdminController::class, 'reject']);
     });
+Route::get('/ping', function () {
+    return response()->json([
+        'ok' => true,
+        'time' => now()->toDateTimeString(),
+    ]);
+});
+
+use App\Http\Controllers\IdentityController;
+Route::post('/track/pageview', [TrackController::class,'pageview'])->middleware('throttle:60,1');
+Route::post('/track/ad',       [TrackController::class,'ad'])->middleware('throttle:60,1');
+
+Route::middleware(['auth:sanctum'])->get('/identity/profile', [IdentityController::class, 'profile']);
+Route::middleware('auth:sanctum')->get('/me', function (Request $request) {
+    return $request->user();
+});
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/reports/overview',  [ReportsController::class, 'overview']);
+    Route::get('/reports/top-pages', [ReportsController::class, 'topPages']);
+    Route::get('/reports/funnel',    [ReportsController::class, 'funnel']);
+});
+
+Route::fallback(fn () => response()->json(['message' => 'Not Found'], 404));
+

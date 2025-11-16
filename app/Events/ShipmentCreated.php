@@ -2,20 +2,22 @@
 
 namespace App\Events;
 
-use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
-
-/**
- * Sự kiện: tạo vận đơn/thông tin giao hàng.
- */
-class ShipmentCreated
+class ShipmentCreated extends BaseEvent
 {
-    use Dispatchable, SerializesModels;
-
     public function __construct(
-        public int $shipmentId,
-        public int $orderId,
-        public string $carrier,
-        public ?string $trackingNo = null
-    ) {}
+        public string $shipmentId,
+        public string $orderId,
+        public string $carrier
+    ) {
+        parent::__construct();
+    }
+
+    public function toArray(): array
+    {
+        return array_merge($this->basePayload(), [
+            'shipment_id' => $this->shipmentId,
+            'order_id'    => $this->orderId,
+            'carrier'     => $this->carrier,
+        ]);
+    }
 }

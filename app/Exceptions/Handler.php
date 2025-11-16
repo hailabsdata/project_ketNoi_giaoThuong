@@ -5,39 +5,30 @@ namespace App\Exceptions;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
-use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Validation\ValidationException;
-use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
-use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Throwable;
-use App\Support\Correlation;
 
 class Handler extends ExceptionHandler
 {
     /**
-     * A list of exception types with their corresponding custom log levels.
-     *
-     * @var array<class-string<\Throwable>, \Psr\Log\LogLevel::*>
+     * Exception levels to report.
      */
     protected $levels = [
-        // ...
+        // 
     ];
 
     /**
-     * A list of the exception types that are not reported.
-     *
-     * @var array<int, class-string<\Throwable>>
+     * Exceptions không report.
      */
     protected $dontReport = [
-        // ...
+        //
     ];
 
     /**
-     * A list of the inputs that are never flashed to the session on validation exceptions.
-     *
-     * @var array<int, string>
+     * Inputs không đưa vào session khi có lỗi.
      */
     protected $dontFlash = [
         'current_password',
@@ -45,74 +36,62 @@ class Handler extends ExceptionHandler
         'password_confirmation',
     ];
 
-    /**
-     * Register the exception handling callbacks for the application.
-     */
     public function register(): void
     {
-        $this->reportable(function (Throwable $e) {
-            // place for Sentry/Bugsnag/etc if needed
-        });
+        //
     }
 
     public function render($request, Throwable $e)
-{
-    // Lấy ID từ Correlation (đã được middleware RequestCorrelation set ở đầu request)
-    $reqId  = Correlation::requestId();
-    $corrId = Correlation::correlationId();
+    {
+        // Nếu là request API (hoặc đã bị ForceJson ép), trả JSON đồng nhất
+        $rid = app('request_id') ?? null;
+        $meta = [
+            'request_id' => $rid,
+            'timestamp'  => now()->toIso8601String(),
+        ];
 
-    if ($request->expectsJson()) {
-
-        // 1) Validation → 422 + fields
-        if ($e instanceof \Illuminate\Validation\ValidationException) {
-            $json = response()->json([
-                'error'           => 'ValidationException',
-                'message'         => $e->getMessage(),
-                'fields'          => $e->errors(),
-                'request_id'      => $reqId,   // dùng Correlation thay vì đọc header
-                'correlation_id'  => $corrId,
-            ], 422);
-
-            // Gắn header ID cho client/devtools
-            return $json->header('X-Request-Id', $reqId)
-                        ->header('X-Correlation-Id', $corrId);
-        }
-
-        // 2) Map status code chuẩn theo loại ngoại lệ
-        $status = match (true) {
-            $e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface => $e->getStatusCode(),
-            $e instanceof \Illuminate\Auth\AuthenticationException                       => 401,
-            $e instanceof \Illuminate\Auth\Access\AuthorizationException                 => 403,
-            $e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException           => 404,
-            $e instanceof \Symfony\Component\HttpKernel\Exception\NotFoundHttpException  => 404,
-            $e instanceof \Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException => 405,
-            $e instanceof \Illuminate\Http\Exceptions\ThrottleRequestsException          => 429,
-            default                                                                      => 500,
+        $map = function (int $status, string $code, string $message, $details = null) use ($meta) {
+            return response()->json([
+                'success' => false,
+                'error'   => [
+                    'code'    => $code,
+                    'message' => $message,
+                    'details' => $details,
+                ],
+                'meta'    => $meta,
+            ], $status);
         };
 
-        // 3) Ẩn message khi production (APP_DEBUG=false) với lỗi 5xx
-        $message = config('app.debug')
-            ? $e->getMessage()
-            : ($status >= 500 ? 'Server Error' : $e->getMessage());
+        if ($e instanceof ValidationException) {
+            return $map(422, 'VALIDATION_ERROR', 'Dữ liệu không hợp lệ', $e->errors());
+        }
 
-        $json = response()->json([
-            'error'           => class_basename($e),
-            'message'         => $message,
-            'status'          => $status,
-            'request_id'      => $reqId,
-            'correlation_id'  => $corrId,
-        ], $status);
+        if ($e instanceof ModelNotFoundException) {
+            return $map(404, 'NOT_FOUND', 'Không tìm thấy tài nguyên');
+        }
 
-        // Trả kèm header ID
-        return $json->header('X-Request-Id', $reqId)
-                    ->header('X-Correlation-Id', $corrId);
+        if ($e instanceof AuthenticationException) {
+            return $map(401, 'UNAUTHENTICATED', 'Chưa xác thực');
+        }
+
+        if ($e instanceof AuthorizationException) {
+            return $map(403, 'FORBIDDEN', 'Không có quyền');
+        }
+
+        if ($e instanceof HttpException) {
+            return $map($e->getStatusCode(), 'HTTP_ERROR', $e->getMessage() ?: 'Lỗi HTTP');
+        }
+
+        if ($e instanceof QueryException) {
+            return $map(500, 'DB_ERROR', 'Lỗi cơ sở dữ liệu');
+        }
+
+        // Dev: vẫn muốn thấy stacktrace
+        if (config('app.debug')) {
+            return parent::render($request, $e);
+        }
+
+        // Fallback production
+        return $map(500, 'INTERNAL_ERROR', 'Có lỗi xảy ra, vui lòng thử lại sau');
     }
-
-    // Non-JSON: dùng render mặc định rồi gắn header
-    $response = parent::render($request, $e);
-    $response->headers->set('X-Request-Id', $reqId);
-    $response->headers->set('X-Correlation-Id', $corrId);
-    return $response;
-}
-
 }

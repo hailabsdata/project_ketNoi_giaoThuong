@@ -136,8 +136,8 @@ networks:
   DB_HOST=db
   DB_PORT=3306
   DB_DATABASE=tradehub
-  DB_USERNAME=haicon
-  DB_PASSWORD=HaiCon2508@
+  DB_USERNAME=Admin
+  DB_PASSWORD=Admin123@
 
   # Liên quan tới Sanctum/CORS khi nối FE dev (Vite)
   SANCTUM_STATEFUL_DOMAINS=localhost:5173
@@ -173,8 +173,8 @@ docker compose exec app php artisan migrate
 
 - Database GUI (Adminer): **http://localhost:8081**
   - Server: `db` (nếu từ máy host thì `localhost:3307`)
-  - User: `haicon`
-  - Pass: `HaiCon2508@`
+  - User: `admin`
+  - Pass: `Admin123@`
   - DB: `tradehub`
 
 ---

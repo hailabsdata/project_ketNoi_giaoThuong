@@ -27,9 +27,9 @@ class EventServiceProvider extends ServiceProvider
         \App\Events\OrderCreated::class => [
         \App\Listeners\ReportOnOrderCreated::class,
         ],
-        \App\Events\PaymentSucceeded::class => [
-            \App\Listeners\ReportOnPaymentSucceeded::class,
-        ],
+        // \App\Events\PaymentSucceeded::class => [
+        //     \App\Listeners\ReportOnPaymentSucceeded::class,
+        // ],
     ];
 
     public function boot(): void {}

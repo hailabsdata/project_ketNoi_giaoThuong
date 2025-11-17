@@ -28,3 +28,30 @@ Route::middleware('basic.env')->get('/', function () {
         ],
     ]);
 });
+// Route::get('/', function () {
+//     return view('welcome');
+// });
+
+use Illuminate\Support\Facades\Route;
+use App\Models\Product;
+use Illuminate\Support\Facades\Http;
+
+Route::get('/', function () {
+    return view('welcome');
+});
+
+
+Route::get('/san-pham', function () {
+    $products = Product::with(['shop', 'productImages'])
+        ->where('status', 'active')
+        ->take(12)
+        ->get();
+    return view('products', compact('products'));
+});
+
+
+
+Route::get('/momo/callback', function () {
+    // MOMO sẽ gọi về đây sau khi thanh toán
+    return "Thanh toán thành công! Cảm ơn bạn.";
+})->name('momo.callback');

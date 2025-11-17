@@ -31,6 +31,16 @@ class EventServiceProvider extends ServiceProvider
         //     \App\Listeners\ReportOnPaymentSucceeded::class,
         // ],
     ];
+    /**
+     * Determine if events and listeners should be automatically discovered.
+     *
+     * @return bool
+     */
+    public function shouldDiscoverEvents()
+    {
+        return false;
+    }
 
     public function boot(): void {}
+    
 }

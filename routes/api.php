@@ -7,6 +7,10 @@ use App\Models\User;
 use App\Events\UserRegistered;
 use App\Http\Controllers\Reports\ReportsController;
 use App\Http\Controllers\Tracking\TrackController;
+use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\ReviewController;
+use App\Http\Controllers\Api\PaymentController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -111,4 +115,29 @@ Route::prefix('moderation')->middleware('auth:api')->group(function () {
         Route::put('reports/{id}/resolve', [ModerationController::class, 'resolveReport']);
         Route::delete('reports/{id}', [ModerationController::class, 'deleteReport']);
     });
+
+Route::prefix('orders')->group(function () {
+    Route::get('/', [OrderController::class, 'index']);      // Lấy tất cả
+    Route::get('/{id}', [OrderController::class, 'show']);   // Lấy theo ID
+    Route::post('/', [OrderController::class, 'store']);          // POST create
+    Route::put('/{id}', [OrderController::class, 'update']);      // PUT update
+    Route::delete('/{id}', [OrderController::class, 'destroy']);  // DELETE cancel
+});
+
+
+
+Route::prefix('reviews')->group(function () {
+    Route::get('/', [ReviewController::class, 'index']);           // GET all
+    Route::get('/{id}', [ReviewController::class, 'show']);        // GET by id
+    Route::post('/', [ReviewController::class, 'store']);          // POST create
+    Route::put('/{id}', [ReviewController::class, 'update']);      // PUT update
+    Route::delete('/{id}', [ReviewController::class, 'destroy']);  // DELETE
+});
+
+
+
+Route::prefix('payments')->group(function () {
+    Route::get('/', [PaymentController::class, 'index']);
+    Route::get('/{id}', [PaymentController::class, 'show']);
+    Route::post('/', [PaymentController::class, 'store']);
 });

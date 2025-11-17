@@ -13,11 +13,6 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
-
-
 Route::middleware('basic.env')->get('/', function () {
     return response()->json([
         'service' => 'TradeHub API',

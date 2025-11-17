@@ -10,6 +10,16 @@ use App\Http\Controllers\Tracking\TrackController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\IdentityController;
+use App\Http\Controllers\ModerationController;
+use App\Http\Controllers\LoginHistoryController;
+use App\Http\Controllers\AdminIdentityController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PlanController;
+use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\DataExportController;
+
 
 /*
 |--------------------------------------------------------------------------

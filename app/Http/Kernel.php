@@ -68,14 +68,6 @@ class Kernel extends HttpKernel
         'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
-        'basic.env' => \App\Http\Middleware\BasicEnvAuth::class,
-        // của bạn
-        'admin' => \App\Http\Middleware\AdminOnly::class,
-        'force.json' => \App\Http\Middleware\ForceJson::class,
-        'request.corr' => \App\Http\Middleware\RequestCorrelation::class,
-        'company.scope' => \App\Http\Middleware\CompanyScope::class,
-    ];
-    protected $middlewareAliases = [
-        
+        'admin' => \App\Http\Middleware\CheckAdmin::class,
     ];
 }

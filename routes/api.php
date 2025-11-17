@@ -115,7 +115,7 @@ Route::prefix('moderation')->middleware('auth:api')->group(function () {
         Route::put('reports/{id}/resolve', [ModerationController::class, 'resolveReport']);
         Route::delete('reports/{id}', [ModerationController::class, 'deleteReport']);
     });
-
+});
 Route::prefix('orders')->group(function () {
     Route::get('/', [OrderController::class, 'index']);      // Lấy tất cả
     Route::get('/{id}', [OrderController::class, 'show']);   // Lấy theo ID

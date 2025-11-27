@@ -151,3 +151,5 @@ Route::prefix('payments')->group(function () {
     Route::get('/{id}', [PaymentController::class, 'show']);
     Route::post('/', [PaymentController::class, 'store']);
 });
+
+Route::fallback(fn () => response()->json(['message' => 'Not Found'], 404));

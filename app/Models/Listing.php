@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
+use App\Models\U;
 class Listing extends Model
 {
     use HasFactory;
@@ -17,12 +17,26 @@ class Listing extends Model
         'category_id',
         'store_id',
         'is_active',
+        'user_id',
+        'slug',
+        'category',
+        'price_cents',
+        'currency',
+        'location_text',
+        'latitude',
+        'longitude',
+        'status',
+        'is_public',
+        'meta',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
         'is_active' => 'boolean',
+        'is_public' => 'boolean',
+        'meta'      => 'array',
     ];
+
 
     /**
      * Relationship với Category
@@ -81,5 +95,16 @@ class Listing extends Model
     {
         // TODO: Implement after promotions table
         return false;
+    }
+
+    
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function bookmarks()
+    {
+        return $this->hasMany(Bookmark::class);
     }
 }

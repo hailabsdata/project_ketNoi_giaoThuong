@@ -102,5 +102,5 @@ class Handler extends ExceptionHandler
         // Fallback production
         return $map(500, 'INTERNAL_ERROR', 'Có lỗi xảy ra, vui lòng thử lại sau');
     
-}
+    }
 }

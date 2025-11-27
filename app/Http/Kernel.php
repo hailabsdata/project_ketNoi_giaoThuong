@@ -35,7 +35,7 @@ class Kernel extends HttpKernel
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            'request.corr',
+            
         ],
 
         'api' => [
@@ -46,7 +46,7 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\RequestId::class,
             \App\Http\Middleware\RequestCorrelation::class,
 	        \App\Http\Middleware\RequestTimer::class,
-            'request.corr',
+            
         ],
     ];
 

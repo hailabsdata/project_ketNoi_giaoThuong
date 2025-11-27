@@ -16,9 +16,17 @@ return new class extends Migration
         Schema::create('categories', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('name', 191);
-            $table->string('slug', 191)->unique('slug');
+            $table->string('slug', 191)->unique();
+            
+            // Giữ lại cái này từ file cũ để làm danh mục cha/con
             $table->unsignedBigInteger('parent_id')->nullable()->index('fk_categories_parent');
-            $table->dateTime('created_at')->useCurrent();
+            
+            // Thêm mấy cái hay ho từ file mới
+            $table->text('description')->nullable();
+            $table->boolean('is_active')->default(true);
+
+            // Dùng timestamps() để có cả created_at và updated_at
+            $table->timestamps(); 
         });
     }
 

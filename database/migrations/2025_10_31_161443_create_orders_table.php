@@ -18,8 +18,10 @@ return new class extends Migration
             $table->unsignedBigInteger('buyer_id')->index('idx_orders_buyer');
             $table->unsignedBigInteger('shop_id')->index('idx_orders_shop');
             $table->enum('status', ['pending', 'paid', 'shipped', 'completed', 'cancelled'])->default('pending');
-            $table->decimal('total_amount', 12)->default(0);
+            $table->decimal('total_amount', 12, 2)->default(0); // Thêm tham số thập phân cho decimal
+            
             $table->dateTime('created_at')->useCurrent();
+            $table->dateTime('updated_at')->useCurrent();
 
             $table->index(['status', 'created_at'], 'idx_orders_status');
         });

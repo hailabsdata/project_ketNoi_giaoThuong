@@ -86,7 +86,9 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Internal server error',
+                'message' => 'Lỗi server rồi: ' . $e->getMessage(), // Hiện thông báo lỗi cụ thể
+                'file' => $e->getFile(), // Lỗi ở file nào
+                'line' => $e->getLine()  // Lỗi ở dòng bao nhiêu
             ], 500); // 500: Lỗi máy chủ nội bộ
         }
     }

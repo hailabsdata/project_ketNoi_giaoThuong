@@ -8,26 +8,45 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Sử dụng create để tạo bảng mới
         Schema::create('listings', function (Blueprint $table) {
             $table->id();
-            $table->string('title');
-            $table->text('description');
-            $table->decimal('price', 12, 2); // 12 tổng số, 2 số thập phân
-            $table->foreignId('category_id')->constrained()->onDelete('cascade');
-            $table->foreignId('store_id')->constrained()->onDelete('cascade');
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-           
-      
             
-            // Indexes for performance
-            $table->index('title');
-            $table->index('price');
-            $table->index('category_id');
-            $table->index('store_id');
-            $table->index('is_active');
-            $table->index(['store_id', 'is_active']);
-            $table->index(['category_id', 'is_active']);
+            // --- KHÓA NGOẠI & LIÊN KẾT ---
+            
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            
+
+            // --- THÔNG TIN CƠ BẢN ---
+            $table->string('title');
+            $table->string('slug')->unique();
+            $table->text('description')->nullable();
+            
+            
+            $table->string('category', 100)->nullable(); 
+            
+            // Ưu tiên price_cents (BigInt) của đoạn 1 để tránh lỗi làm tròn tiền tệ
+            $table->bigInteger('price_cents')->default(0);
+            $table->string('currency', 10)->default('VND');
+
+            // --- ĐỊA ĐIỂM (Lấy từ đoạn 1) ---
+            $table->string('location_text')->nullable();
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
+
+            
+            $table->string('status', 20)->default('draft'); // draft|published|archived
+            $table->boolean('is_public')->default(true);
+            $table->boolean('is_active')->default(true); 
+
+            $table->json('meta')->nullable();
+            $table->timestamps();
+
+            
+            $table->index('title'); 
+            $table->index(['category', 'status', 'is_public']); 
+            $table->index(['latitude', 'longitude']); 
+            $table->index('is_active'); 
         });
     }
 

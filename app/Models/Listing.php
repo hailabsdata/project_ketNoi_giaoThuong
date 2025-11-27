@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\U;
+
 class Listing extends Model
 {
     use HasFactory;
@@ -36,7 +36,6 @@ class Listing extends Model
         'is_public' => 'boolean',
         'meta'      => 'array',
     ];
-
 
     /**
      * Relationship với Category
@@ -97,7 +96,6 @@ class Listing extends Model
         return false;
     }
 
-    
     public function user()
     {
         return $this->belongsTo(User::class);

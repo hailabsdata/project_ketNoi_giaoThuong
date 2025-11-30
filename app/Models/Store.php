@@ -17,6 +17,7 @@ class Store extends Model
         'phone',
         'address',
         'is_active',
+        'user_id', // thêm cột user_id để liên kết với User
     ];
 
     protected $casts = [
@@ -37,5 +38,23 @@ class Store extends Model
     public function scopeSearch($query, $search)
     {
         return $query->where('name', 'like', "%{$search}%");
+    }
+
+    /**
+     * Relationship tới User
+     * Lưu ý: Nếu bảng User chưa có, giá trị trả về sẽ là null
+     */
+    public function user()
+    {
+        // dùng fully qualified class name để tránh lỗi
+        return $this->belongsTo(\App\Models\User::class, 'user_id');
+    }
+
+    /**
+     * Relationship tới Listing
+     */
+    public function listings()
+    {
+        return $this->hasMany(Listing::class);
     }
 }

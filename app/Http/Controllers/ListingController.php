@@ -16,21 +16,31 @@ class ListingController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = Listing::with(['category', 'store'])->active();
+            $query = Listing::with(['user', 'shop'])->active();
 
             // Tìm kiếm theo tiêu đề
             if ($request->has('search') && $request->search) {
                 $query->search($request->search);
             }
 
-            // Lọc theo category_id
-            if ($request->has('category_id') && $request->category_id) {
-                $query->byCategory($request->category_id);
+            // Lọc theo category
+            if ($request->has('category') && $request->category) {
+                $query->where('category', $request->category);
             }
 
-            // Lọc theo store_id
-            if ($request->has('store_id') && $request->store_id) {
-                $query->byStore($request->store_id);
+            // Lọc theo shop_id
+            if ($request->has('shop_id') && $request->shop_id) {
+                $query->where('shop_id', $request->shop_id);
+            }
+
+            // Lọc theo type
+            if ($request->has('type') && $request->type) {
+                $query->where('type', $request->type);
+            }
+
+            // Lọc theo status
+            if ($request->has('status') && $request->status) {
+                $query->where('status', $request->status);
             }
 
             // Phân trang
@@ -54,7 +64,6 @@ class ListingController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
             ], 500);
         }
     }
@@ -65,16 +74,40 @@ class ListingController extends Controller
     public function store(ListingRequest $request): JsonResponse
     {
         try {
+            $user = $request->user();
+
+            // Kiểm tra quyền: chỉ seller và admin mới được đăng tin
+            if (!in_array($user->role, ['seller', 'admin'])) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Chỉ người bán (seller) mới có quyền đăng tin. Vui lòng nâng cấp tài khoản.'
+                ], 403);
+            }
+
             DB::beginTransaction();
 
-            $listing = Listing::create($request->validated());
+            $data = $request->validated();
+            $data['user_id'] = $user->id;
+            
+            // Auto-generate slug if not provided
+            if (empty($data['slug'])) {
+                $data['slug'] = \Illuminate\Support\Str::slug($data['title']) . '-' . time();
+            }
+            
+            // Set defaults
+            $data['currency'] = $data['currency'] ?? 'VND';
+            $data['status'] = $data['status'] ?? 'draft';
+            $data['is_active'] = $data['is_active'] ?? true;
+            $data['is_public'] = $data['is_public'] ?? true;
+
+            $listing = Listing::create($data);
 
             DB::commit();
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Bài đăng đã được tạo thành công',
-                'data' => $listing
+                'data' => $listing->load(['user', 'shop'])
             ], 201);
 
         } catch (\Exception $e) {
@@ -82,7 +115,7 @@ class ListingController extends Controller
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Lỗi máy chủ'
+                'message' => 'Lỗi máy chủ: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -93,16 +126,33 @@ class ListingController extends Controller
     public function update(ListingRequest $request, Listing $listing): JsonResponse
     {
         try {
+            $user = $request->user();
+
+            // Kiểm tra quyền: chỉ chủ listing hoặc admin mới được cập nhật
+            if ($listing->user_id !== $user->id && $user->role !== 'admin') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Bạn không có quyền cập nhật bài đăng này'
+                ], 403);
+            }
+
             DB::beginTransaction();
 
-            $listing->update($request->validated());
+            $data = $request->validated();
+            
+            // Auto-generate slug if title changed and slug not provided
+            if (isset($data['title']) && $data['title'] !== $listing->title && empty($data['slug'])) {
+                $data['slug'] = \Illuminate\Support\Str::slug($data['title']) . '-' . time();
+            }
+
+            $listing->update($data);
 
             DB::commit();
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Bài đăng đã được cập nhật thành công',
-                'data' => $listing->fresh(['category', 'store'])
+                'data' => $listing->fresh(['user', 'shop'])
             ]);
 
         } catch (\Exception $e) {
@@ -110,7 +160,7 @@ class ListingController extends Controller
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Lỗi máy chủ'
+                'message' => 'Lỗi máy chủ: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -118,9 +168,19 @@ class ListingController extends Controller
     /**
      * DELETE - Xóa bài đăng
      */
-    public function destroy(Listing $listing): JsonResponse
+    public function destroy(Request $request, Listing $listing): JsonResponse
     {
         try {
+            $user = $request->user();
+
+            // Kiểm tra quyền: chỉ chủ listing hoặc admin mới được xóa
+            if ($listing->user_id !== $user->id && $user->role !== 'admin') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Bạn không có quyền xóa bài đăng này'
+                ], 403);
+            }
+
             DB::beginTransaction();
 
             // Kiểm tra xem bài đăng có đang trong chiến dịch quảng cáo không
@@ -145,9 +205,41 @@ class ListingController extends Controller
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Lỗi máy chủ'
+                'message' => 'Lỗi máy chủ: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * PUT - Admin duyệt bài đăng
+     */
+    public function approve(Request $request, Listing $listing): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user->role !== 'admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Chỉ admin mới có quyền duyệt bài đăng'
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'status' => 'required|in:published,archived',
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        $listing->update([
+            'status' => $validated['status'],
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => $validated['status'] === 'published' 
+                ? 'Bài đăng đã được duyệt' 
+                : 'Bài đăng đã bị từ chối',
+            'data' => $listing->load(['user', 'shop'])
+        ]);
     }
 
     /**
@@ -155,7 +247,7 @@ class ListingController extends Controller
      */
     public function show(Listing $listing): JsonResponse
     {
-        $listing->load(['category', 'store']);
+        $listing->load(['user', 'shop', 'listingImages']);
 
         return response()->json([
             'status' => 'success',

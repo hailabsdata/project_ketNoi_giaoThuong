@@ -11,7 +11,7 @@ class ModerationController extends Controller
 {
     /**
      * POST /api/moderation/report
-     * Gửi báo cáo vi phạm
+     * Gß╗¡i b├ío c├ío vi phß║ím
      */
     public function report(Request $request)
     {
@@ -24,7 +24,7 @@ class ModerationController extends Controller
                 'reason' => 'required|string|max:255|min:10',
             ]);
 
-            // Custom validation: phải có ít nhất 1 target
+            // Custom validation: phß║úi c├│ ├¡t nhß║Ñt 1 target
             $validator->after(function ($validator) use ($request) {
                 if (!$request->target_user_id && !$request->target_post_id) {
                     $validator->errors()->add('target', 'Must specify either target_user_id or target_post_id');
@@ -43,7 +43,7 @@ class ModerationController extends Controller
                 ], 400);
             }
 
-            // Kiểm tra không tự báo cáo mình
+            // Kiß╗âm tra kh├┤ng tß╗▒ b├ío c├ío m├¼nh
             if ($request->target_user_id == $user->id) {
                 return response()->json([
                     'status' => 'error',
@@ -51,7 +51,7 @@ class ModerationController extends Controller
                 ], 400);
             }
 
-            // Kiểm tra không báo cáo trùng lặp trong 24h
+            // Kiß╗âm tra kh├┤ng b├ío c├ío tr├╣ng lß║╖p trong 24h
             $existingReport = ModerationReport::where('reporter_id', $user->id)
                 ->where(function ($query) use ($request) {
                     if ($request->target_user_id) {
@@ -71,7 +71,7 @@ class ModerationController extends Controller
                 ], 409);
             }
 
-            // Tạo báo cáo
+            // Tß║ío b├ío c├ío
             $report = ModerationReport::create([
                 'reporter_id' => $user->id,
                 'target_user_id' => $request->target_user_id,
@@ -102,7 +102,7 @@ class ModerationController extends Controller
 
     /**
      * GET /api/moderation/my-reports
-     * Xem báo cáo đã gửi của user hiện tại
+     * Xem b├ío c├ío ─æ├ú gß╗¡i cß╗ºa user hiß╗çn tß║íi
      */
     public function myReports(Request $request)
     {
@@ -135,7 +135,7 @@ class ModerationController extends Controller
 
     /**
      * GET /api/moderation/reports
-     * Admin xem tất cả báo cáo (có filter)
+     * Admin xem tß║Ñt cß║ú b├ío c├ío (c├│ filter)
      */
     public function getReports(Request $request)
     {
@@ -193,7 +193,7 @@ class ModerationController extends Controller
 
     /**
      * GET /api/moderation/reports/{id}
-     * Admin xem chi tiết báo cáo
+     * Admin xem chi tiß║┐t b├ío c├ío
      */
     public function getReport($id)
     {
@@ -226,7 +226,7 @@ class ModerationController extends Controller
 
     /**
      * PUT /api/moderation/reports/{id}/resolve
-     * Admin xử lý báo cáo (duyệt/từ chối)
+     * Admin xß╗¡ l├╜ b├ío c├ío (duyß╗çt/tß╗½ chß╗æi)
      */
     public function resolveReport(Request $request, $id)
     {
@@ -292,7 +292,7 @@ class ModerationController extends Controller
 
     /**
      * DELETE /api/moderation/reports/{id}
-     * Admin xóa báo cáo
+     * Admin x├│a b├ío c├ío
      */
     public function deleteReport($id)
     {

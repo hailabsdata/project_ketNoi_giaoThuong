@@ -15,6 +15,19 @@ class ListingComment extends Model
         'body',
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
+    /**
+     * Relationships
+     */
+    public function listing()
+    {
+        return $this->belongsTo(Listing::class);
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);

@@ -18,35 +18,46 @@ class ListingRequest extends FormRequest
 
         return [
             'title' => 'required|string|max:255',
-            'description' => 'required|string|max:2000',
-            'price' => 'required|numeric|min:0',
-            'category_id' => [
-                'required',
+            'slug' => 'nullable|string|max:255|unique:listings,slug,' . $listingId,
+            'description' => 'nullable|string|max:5000',
+            'category' => 'nullable|string|max:100',
+            'type' => 'nullable|in:sell,buy,service',
+            'price_cents' => 'required|integer|min:0',
+            'currency' => 'nullable|string|max:10',
+            'stock_qty' => 'nullable|integer|min:0',
+            'shop_id' => [
+                'nullable',
                 'integer',
-                Rule::exists('categories', 'id') // Se tao categories table sau
+                Rule::exists('shops', 'id')
             ],
-            'store_id' => [
-                'required',
-                'integer',
-                Rule::exists('stores', 'id')
-            ],
+            'images' => 'nullable|array',
+            'images.*' => 'nullable|string|max:512',
+            'location_text' => 'nullable|string|max:255',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+            'status' => 'nullable|in:draft,published,archived',
+            'is_active' => 'nullable|boolean',
+            'is_public' => 'nullable|boolean',
+            'meta' => 'nullable|array',
         ];
     }
 
     public function messages(): array
     {
         return [
-            'title.required' => 'Tieu de bai dang la bat buoc.',
-            'title.max' => 'Tieu de khong duoc vuot qua 255 ky tu.',
-            'description.required' => 'Mo ta bai dang la bat buoc.',
-            'description.max' => 'Mo ta khong duoc vuot qua 2000 ky tu.',
-            'price.required' => 'Gia san pham la bat buoc.',
-            'price.numeric' => 'Gia san pham phai la so.',
-            'price.min' => 'Gia san pham phai lon hon hoac bang 0.',
-            'category_id.required' => 'Danh muc la bat buoc.',
-            'category_id.exists' => 'Danh muc khong ton tai.',
-            'store_id.required' => 'Cua hang la bat buoc.',
-            'store_id.exists' => 'Cua hang khong ton tai.',
+            'title.required' => 'Tiêu đề bài đăng là bắt buộc.',
+            'title.max' => 'Tiêu đề không được vượt quá 255 ký tự.',
+            'slug.unique' => 'Slug đã tồn tại.',
+            'description.max' => 'Mô tả không được vượt quá 5000 ký tự.',
+            'price_cents.required' => 'Giá sản phẩm là bắt buộc.',
+            'price_cents.integer' => 'Giá sản phẩm phải là số nguyên.',
+            'price_cents.min' => 'Giá sản phẩm phải lớn hơn hoặc bằng 0.',
+            'type.in' => 'Loại tin đăng không hợp lệ.',
+            'stock_qty.integer' => 'Số lượng phải là số nguyên.',
+            'stock_qty.min' => 'Số lượng phải lớn hơn hoặc bằng 0.',
+            'shop_id.exists' => 'Cửa hàng không tồn tại.',
+            'images.array' => 'Hình ảnh phải là mảng.',
+            'status.in' => 'Trạng thái không hợp lệ.',
         ];
     }
 }

@@ -43,7 +43,10 @@ class SocialController extends BaseApiController
         return $this->noContent();
     }
 
-    public function comments(Request $request, int $listingId)
+    /**
+     * GET /api/listings/{listing}/comments
+     */
+    public function getComments(Request $request, int $listingId)
     {
         $v = $request->validate([
             'per_page' => 'nullable|integer|min:1|max:100',
@@ -51,25 +54,28 @@ class SocialController extends BaseApiController
 
         $comments = ListingComment::with('user')
             ->where('listing_id', $listingId)
-            ->orderBy('created_at', 'asc')
-            ->paginate($v['per_page'] ?? 50);
+            ->orderBy('created_at', 'desc')
+            ->paginate($v['per_page'] ?? 20);
 
         return $this->paginate($comments);
     }
 
-    public function storeComment(Request $request, int $listingId)
+    /**
+     * POST /api/listings/{listing}/comments
+     */
+    public function comment(Request $request, int $listingId)
     {
         $user = $request->user();
         $v = $request->validate([
-            'body' => 'required|string|max:2000',
+            'content' => 'required|string|max:2000',
         ]);
 
         $comment = ListingComment::create([
             'listing_id' => $listingId,
             'user_id'    => $user->id,
-            'body'       => $v['body'],
+            'body'       => $v['content'],
         ]);
 
-        return $this->created($comment);
+        return $this->created($comment->load('user'));
     }
 }

@@ -11,47 +11,36 @@ class Listing extends Model
     use HasFactory;
 
     protected $fillable = [
-        'title',
-        'description',
-        'price',
-        'category_id',
-        'store_id',
-        'is_active',
         'user_id',
+        'shop_id',
+        'title',
         'slug',
+        'description',
+        'images',
         'category',
+        'type',
         'price_cents',
+        'stock_qty',
+        'total_reviews',
+        'rating',
         'currency',
         'location_text',
         'latitude',
         'longitude',
         'status',
+        'is_active',
         'is_public',
         'meta',
     ];
 
     protected $casts = [
-        'price' => 'decimal:2',
         'is_active' => 'boolean',
         'is_public' => 'boolean',
-        'meta'      => 'array',
+        'images' => 'array',
+        'meta' => 'array',
+        'total_reviews' => 'integer',
+        'rating' => 'decimal:2',
     ];
-
-    /**
-     * Relationship với Category
-     */
-    public function category()
-    {
-        return $this->belongsTo(Category::class);
-    }
-
-    /**
-     * Relationship với Store
-     */
-    public function store()
-    {
-        return $this->belongsTo(Store::class);
-    }
 
     /**
      * Scope active listings
@@ -71,29 +60,11 @@ class Listing extends Model
     }
 
     /**
-     * Scope filter by category
-     */
-    public function scopeByCategory($query, $categoryId)
-    {
-        return $query->where('category_id', $categoryId);
-    }
-
-    /**
-     * Scope filter by store
-     */
-    public function scopeByStore($query, $storeId)
-    {
-        return $query->where('store_id', $storeId);
-    }
-
-    /**
      * Kiểm tra xem listing có đang trong chiến dịch quảng cáo không
-     * (Sẽ tích hợp sau khi có bảng promotions)
      */
     public function hasActivePromotions()
     {
-        // TODO: Implement after promotions table
-        return false;
+        return $this->promotions()->where('status', 'active')->exists();
     }
 
     public function user()
@@ -104,5 +75,49 @@ class Listing extends Model
     public function bookmarks()
     {
         return $this->hasMany(Bookmark::class);
+    }
+
+    public function auction()
+    {
+        return $this->hasOne(Auction::class);
+    }
+
+    public function likes()
+    {
+        return $this->hasMany(ListingLike::class);
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(ListingComment::class);
+    }
+
+    public function shop()
+    {
+        return $this->belongsTo(Shop::class);
+    }
+
+    public function promotions()
+    {
+        return $this->hasMany(Promotion::class);
+    }
+
+    public function activePromotions()
+    {
+        return $this->hasMany(Promotion::class)->where('status', 'active');
+    }
+
+    public function listingImages()
+    {
+        return $this->hasMany(ListingImage::class)->orderBy('sort_order');
+    }
+
+    // Helper để lấy ảnh đầu tiên
+    public function getMainImageAttribute()
+    {
+        if ($this->images && count($this->images) > 0) {
+            return $this->images[0];
+        }
+        return $this->listingImages()->first()?->url;
     }
 }

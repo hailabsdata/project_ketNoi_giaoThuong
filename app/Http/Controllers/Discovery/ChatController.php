@@ -12,47 +12,95 @@ use App\Models\User;
  *
  * Đơn giản hoá: chat 1-1 giữa 2 user, có thể gắn với 1 listing.
  *
- * - GET  /api/chat/messages?with_user_id=xx[&listing_id=yy]
+ * - GET  /api/chat/conversations
+ * - GET  /api/chat/messages/{user_id}
  * - POST /api/chat/messages
+ * - PUT  /api/chat/messages/{user_id}/read
  */
 class ChatController extends BaseApiController
 {
-    public function index(Request $request)
+    /**
+     * GET /api/chat/conversations
+     * Lấy danh sách cuộc trò chuyện
+     */
+    public function conversations(Request $request)
     {
         $user = $request->user();
-        $v = $request->validate([
-            'with_user_id' => 'required|integer|different:me',
-            'listing_id'   => 'nullable|integer',
-            'per_page'     => 'nullable|integer|min:1|max:100',
-        ]);
-
-        $otherId  = $v['with_user_id'];
-        $perPage  = $v['per_page'] ?? 50;
-
-        $q = ChatMessage::query()
-            ->where(function ($q) use ($user, $otherId) {
+        
+        // Lấy danh sách user đã chat
+        $conversations = ChatMessage::query()
+            ->where(function ($q) use ($user) {
                 $q->where('from_user_id', $user->id)
-                  ->where('to_user_id', $otherId);
-            })->orWhere(function ($q) use ($user, $otherId) {
-                $q->where('from_user_id', $otherId)
+                  ->orWhere('to_user_id', $user->id);
+            })
+            ->with(['fromUser', 'toUser'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->groupBy(function ($message) use ($user) {
+                return $message->from_user_id == $user->id 
+                    ? $message->to_user_id 
+                    : $message->from_user_id;
+            })
+            ->map(function ($messages, $userId) use ($user) {
+                $lastMessage = $messages->first();
+                $otherUser = $lastMessage->from_user_id == $user->id 
+                    ? $lastMessage->toUser 
+                    : $lastMessage->fromUser;
+                
+                return [
+                    'user' => [
+                        'id' => $otherUser->id,
+                        'name' => $otherUser->name,
+                        'avatar' => $otherUser->avatar ?? null,
+                    ],
+                    'last_message' => [
+                        'body' => $lastMessage->body,
+                        'created_at' => $lastMessage->created_at,
+                    ],
+                    'unread_count' => $messages->where('to_user_id', $user->id)
+                        ->where('is_read', false)
+                        ->count(),
+                ];
+            })
+            ->values();
+
+        return $this->ok($conversations);
+    }
+
+    /**
+     * GET /api/chat/messages/{user_id}
+     * Lấy lịch sử tin nhắn với một user
+     */
+    public function messages(Request $request, int $userId)
+    {
+        $user = $request->user();
+        $perPage = $request->input('per_page', 50);
+
+        $messages = ChatMessage::query()
+            ->where(function ($q) use ($user, $userId) {
+                $q->where('from_user_id', $user->id)
+                  ->where('to_user_id', $userId);
+            })->orWhere(function ($q) use ($user, $userId) {
+                $q->where('from_user_id', $userId)
                   ->where('to_user_id', $user->id);
-            });
-
-        if (!empty($v['listing_id'])) {
-            $q->where('listing_id', $v['listing_id']);
-        }
-
-        $messages = $q->orderBy('created_at', 'asc')->paginate($perPage);
+            })
+            ->with(['fromUser', 'toUser', 'listing'])
+            ->orderBy('created_at', 'asc')
+            ->paginate($perPage);
 
         return $this->paginate($messages);
     }
 
-    public function store(Request $request)
+    /**
+     * POST /api/chat/messages
+     * Gửi tin nhắn mới
+     */
+    public function send(Request $request)
     {
         $user = $request->user();
         $v = $request->validate([
             'to_user_id' => 'required|integer|exists:users,id',
-            'listing_id' => 'nullable|integer',
+            'listing_id' => 'nullable|integer|exists:listings,id',
             'body'       => 'required|string|max:2000',
         ]);
 
@@ -63,6 +111,21 @@ class ChatController extends BaseApiController
             'body'         => $v['body'],
         ]);
 
-        return $this->created($message);
+        return $this->created($message->load(['fromUser', 'toUser']));
+    }
+
+    /**
+     * PUT /api/chat/messages/{user_id}/read
+     * Đánh dấu tất cả tin nhắn từ user này là đã đọc
+     */
+    public function markAsRead(Request $request, int $userId)
+    {
+        $user = $request->user();
+        
+        ChatMessage::where('from_user_id', $userId)
+            ->where('to_user_id', $user->id)
+            ->update(['is_read' => true]);
+
+        return $this->ok(['message' => 'Đã đánh dấu đã đọc']);
     }
 }

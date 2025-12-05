@@ -17,7 +17,7 @@ class User extends Authenticatable implements JWTSubject
         'password_hash',
         'phone',
         'avatar_url',
-        'role',
+        'role', // buyer, seller, admin
         'status',
         'is_verified',
         'is_active',
@@ -25,6 +25,32 @@ class User extends Authenticatable implements JWTSubject
         'provider_id',
         'last_login_at',
     ];
+
+    // Role constants
+    const ROLE_BUYER = 'buyer';
+    const ROLE_SELLER = 'seller';
+    const ROLE_ADMIN = 'admin';
+
+    // Helper methods for roles
+    public function isBuyer()
+    {
+        return $this->role === self::ROLE_BUYER;
+    }
+
+    public function isSeller()
+    {
+        return $this->role === self::ROLE_SELLER;
+    }
+
+    public function isAdmin()
+    {
+        return $this->role === self::ROLE_ADMIN;
+    }
+
+    public function canCreateListing()
+    {
+        return in_array($this->role, [self::ROLE_SELLER, self::ROLE_ADMIN]);
+    }
 
     protected $casts = [
         'is_verified' => 'boolean',

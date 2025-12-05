@@ -128,52 +128,91 @@ Route::prefix('moderation')->middleware('auth:api')->group(function () {
         Route::delete('reports/{id}', [ModerationController::class, 'deleteReport']);
     });
 });
-Route::prefix('orders')->group(function () {
-    Route::get('/', [OrderController::class, 'index']);      // Lấy tất cả
-    Route::get('/{id}', [OrderController::class, 'show']);   // Lấy theo ID
-    Route::post('/', [OrderController::class, 'store']);          // POST create
-    Route::put('/{id}', [OrderController::class, 'update']);      // PUT update
-    Route::delete('/{id}', [OrderController::class, 'destroy']);  // DELETE cancel
+// Orders API - Quản lý đơn hàng (require auth)
+Route::prefix('orders')->middleware('auth:api')->group(function () {
+    Route::get('/', [OrderController::class, 'index']);           // Danh sách đơn hàng
+    Route::get('/{id}', [OrderController::class, 'show']);        // Chi tiết đơn hàng
+    Route::post('/', [OrderController::class, 'store']);          // Tạo đơn hàng mới
+    Route::put('/{id}', [OrderController::class, 'update']);      // Cập nhật đơn hàng
+    Route::delete('/{id}', [OrderController::class, 'destroy']);  // Hủy đơn hàng
 });
 
 
 
+// Reviews API - Hệ thống đánh giá
 Route::prefix('reviews')->group(function () {
-    Route::get('/', [ReviewController::class, 'index']);           // GET all
-    Route::get('/{id}', [ReviewController::class, 'show']);        // GET by id
-    Route::post('/', [ReviewController::class, 'store']);          // POST create
-    Route::put('/{id}', [ReviewController::class, 'update']);      // PUT update
-    Route::delete('/{id}', [ReviewController::class, 'destroy']);  // DELETE
-});
-
-
-
-Route::prefix('payments')->group(function () {
-    Route::get('/', [PaymentController::class, 'index']);
-    Route::get('/{id}', [PaymentController::class, 'show']);
-    Route::post('/', [PaymentController::class, 'store']);
-});
-
-Route::fallback(fn () => response()->json(['message' => 'Not Found'], 404));
-
-Route::prefix('stores')->group(function () {
-    Route::get('/', [StoreController::class, 'index']);      // Lấy danh sách (có phân trang, search)
-    Route::post('/', [StoreController::class, 'store']);     // Tạo mới
-    Route::get('/{store}', [StoreController::class, 'show']); // Xem chi tiết 1 cửa hàng
-    Route::put('/{store}', [StoreController::class, 'update']); // Cập nhật
-    Route::delete('/{store}', [StoreController::class, 'destroy']); // Xóa
-});
-
-Route::prefix('categories')->group(function () {
-    // API lấy danh sách gọn (cho dropdown chọn danh mục)
-    Route::get('/simple-list', [CategoryController::class, 'simpleList']); 
+    // Public routes - không cần auth
+    Route::get('/', [ReviewController::class, 'index']);           // Danh sách đánh giá (filter, sort, pagination)
+    Route::get('/summary', [ReviewController::class, 'getSummary']); // Thống kê rating
+    Route::get('/{id}', [ReviewController::class, 'show']);        // Chi tiết đánh giá
     
-    // Các API CRUD chuẩn
-    Route::get('/', [CategoryController::class, 'index']);      // Danh sách & Search
-    Route::post('/', [CategoryController::class, 'store']);     // Tạo mới
-    Route::get('/{category}', [CategoryController::class, 'show']); // Xem chi tiết
-    Route::put('/{category}', [CategoryController::class, 'update']); // Cập nhật
-    Route::delete('/{category}', [CategoryController::class, 'destroy']); // Xóa
+    // Protected routes - cần auth
+    Route::middleware('auth:api')->group(function () {
+        Route::get('/my-reviews', [ReviewController::class, 'myReviews']); // Đánh giá của tôi
+        Route::post('/', [ReviewController::class, 'store']);          // Tạo đánh giá mới
+        Route::put('/{id}', [ReviewController::class, 'update']);      // Cập nhật đánh giá
+        Route::delete('/{id}', [ReviewController::class, 'destroy']);  // Xóa đánh giá
+        
+        // Mark as helpful
+        Route::post('/{id}/helpful', [ReviewController::class, 'markAsHelpful']);
+        Route::delete('/{id}/helpful', [ReviewController::class, 'unmarkAsHelpful']);
+        
+        // Seller reply
+        Route::post('/{id}/reply', [ReviewController::class, 'addSellerReply']);
+    });
+});
+
+
+
+// Payments API - Thanh toán
+Route::prefix('payments')->group(function () {
+    // Public routes - Callbacks từ payment gateways
+    Route::post('/vnpay/callback', [PaymentController::class, 'vnpayCallback']);
+    Route::post('/momo/callback', [PaymentController::class, 'momoCallback']);
+    Route::post('/zalopay/callback', [PaymentController::class, 'zalopayCallback']);
+    
+    // Protected routes - Cần authentication
+    Route::middleware('auth:api')->group(function () {
+        Route::get('/', [PaymentController::class, 'index']);
+        Route::get('/my-payments', [PaymentController::class, 'myPayments']);
+        Route::get('/{id}', [PaymentController::class, 'show']);
+        Route::post('/', [PaymentController::class, 'store']);
+        Route::post('/{id}/refund', [PaymentController::class, 'refund']);
+        Route::post('/{id}/cancel', [PaymentController::class, 'cancel']);
+    });
+});
+
+// Shops API - Quản lý gian hàng
+Route::prefix('shops')->group(function () {
+    Route::get('/', [\App\Http\Controllers\ShopController::class, 'index']);
+    Route::get('/{shop}', [\App\Http\Controllers\ShopController::class, 'show']);
+    
+    Route::middleware('auth:api')->group(function () {
+        Route::post('/', [\App\Http\Controllers\ShopController::class, 'store']);
+        Route::put('/{shop}', [\App\Http\Controllers\ShopController::class, 'update']);
+        Route::delete('/{shop}', [\App\Http\Controllers\ShopController::class, 'destroy']);
+    });
+    
+    // Categories của shop (nested routes)
+    Route::prefix('{shop}/categories')->group(function () {
+        // Public - xem categories của shop
+        Route::get('/', [CategoryController::class, 'index']);
+        Route::get('/simple-list', [CategoryController::class, 'simpleList']);
+        Route::get('/{category}', [CategoryController::class, 'show']);
+        
+        // Seller - tạo/sửa/xóa categories của shop mình
+        Route::middleware('auth:api')->group(function () {
+            Route::post('/', [CategoryController::class, 'store']);
+            Route::put('/{category}', [CategoryController::class, 'update']);
+            Route::delete('/{category}', [CategoryController::class, 'destroy']);
+        });
+    });
+});
+
+// Global Categories - Xem tất cả categories từ mọi shops (cho trang chủ, search)
+Route::prefix('categories')->group(function () {
+    Route::get('/', [CategoryController::class, 'allCategories']); // Tất cả categories
+    Route::get('/simple-list', [CategoryController::class, 'allCategoriesSimple']); // Dropdown tất cả
 });
 
 Route::prefix('listings')->group(function () {
@@ -184,13 +223,89 @@ Route::prefix('listings')->group(function () {
     Route::delete('/{listing}', [ListingController::class, 'destroy']); // Xóa
 });
 
-Route::prefix('promotion')->group(function () {
-    Route::get('/active', [PromotionController::class, 'activePromotions']);
-    Route::patch('/{id}/featured', [PromotionController::class, 'updateFeatured']);
-    
+Route::prefix('promotion')->middleware('auth:api')->group(function () {
     Route::get('/', [PromotionController::class, 'index']);
+    Route::get('/active', [PromotionController::class, 'activePromotions']);
     Route::post('/', [PromotionController::class, 'store']);
     Route::get('/{id}', [PromotionController::class, 'show']);
     Route::put('/{id}', [PromotionController::class, 'update']);
+    Route::patch('/{id}/featured', [PromotionController::class, 'updateFeatured']);
     Route::delete('/{id}', [PromotionController::class, 'destroy']);
 });
+
+// Discovery & Social Features
+Route::prefix('discovery')->group(function () {
+    Route::get('search', [\App\Http\Controllers\Discovery\DiscoveryController::class, 'search']);
+});
+
+// Bookmarks (require auth)
+Route::prefix('bookmarks')->middleware('auth:api')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Discovery\BookmarkController::class, 'index']);
+    Route::post('/', [\App\Http\Controllers\Discovery\BookmarkController::class, 'store']);
+    Route::delete('/{listing_id}', [\App\Http\Controllers\Discovery\BookmarkController::class, 'destroy']);
+});
+
+// Listing Social Features (require auth)
+Route::prefix('listings')->middleware('auth:api')->group(function () {
+    Route::post('/{listing}/like', [\App\Http\Controllers\Discovery\SocialController::class, 'like']);
+    Route::delete('/{listing}/like', [\App\Http\Controllers\Discovery\SocialController::class, 'unlike']);
+    Route::post('/{listing}/comments', [\App\Http\Controllers\Discovery\SocialController::class, 'comment']);
+    Route::get('/{listing}/comments', [\App\Http\Controllers\Discovery\SocialController::class, 'getComments']);
+});
+
+// Chat (require auth)
+Route::prefix('chat')->middleware('auth:api')->group(function () {
+    Route::get('conversations', [\App\Http\Controllers\Discovery\ChatController::class, 'conversations']);
+    Route::get('messages/{user_id}', [\App\Http\Controllers\Discovery\ChatController::class, 'messages']);
+    Route::post('messages', [\App\Http\Controllers\Discovery\ChatController::class, 'send']);
+    Route::put('messages/{user_id}/read', [\App\Http\Controllers\Discovery\ChatController::class, 'markAsRead']);
+});
+
+// Inquiries
+Route::post('inquiries', [\App\Http\Controllers\Discovery\InquiryController::class, 'store']);
+Route::get('inquiries', [\App\Http\Controllers\Discovery\InquiryController::class, 'index'])->middleware('auth:api');
+
+// Auctions
+Route::prefix('auctions')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Discovery\AuctionController::class, 'index']);
+    Route::get('/{auction}', [\App\Http\Controllers\Discovery\AuctionController::class, 'show']);
+    
+    Route::middleware('auth:api')->group(function () {
+        Route::post('/', [\App\Http\Controllers\Discovery\AuctionController::class, 'store']);
+        Route::put('/{auction}', [\App\Http\Controllers\Discovery\AuctionController::class, 'update']);
+        Route::delete('/{auction}', [\App\Http\Controllers\Discovery\AuctionController::class, 'destroy']);
+        Route::post('/{auction}/bids', [\App\Http\Controllers\Discovery\AuctionController::class, 'placeBid']);
+        Route::get('/{auction}/bids', [\App\Http\Controllers\Discovery\AuctionController::class, 'getBids']);
+        Route::get('/my-bids', [\App\Http\Controllers\Discovery\AuctionController::class, 'myBids']);
+    });
+});
+
+// Support & FAQ
+Route::prefix('faqs')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Discovery\SupportController::class, 'faqs']);
+});
+
+Route::prefix('support')->middleware('auth:api')->group(function () {
+    Route::get('tickets', [\App\Http\Controllers\Discovery\SupportController::class, 'tickets']);
+    Route::post('tickets', [\App\Http\Controllers\Discovery\SupportController::class, 'createTicket']);
+    Route::get('tickets/{ticket}', [\App\Http\Controllers\Discovery\SupportController::class, 'showTicket']);
+    Route::post('tickets/{ticket}/messages', [\App\Http\Controllers\Discovery\SupportController::class, 'replyTicket']);
+    Route::put('tickets/{ticket}/close', [\App\Http\Controllers\Discovery\SupportController::class, 'closeTicket']);
+});
+
+// Statistics (require auth)
+Route::prefix('stats')->middleware('auth:api')->group(function () {
+    Route::get('overview', [\App\Http\Controllers\Api\ReportController::class, 'overview']);
+    Route::get('views', [\App\Http\Controllers\Api\ReportController::class, 'views']);
+    Route::get('revenue', [\App\Http\Controllers\Api\ReportController::class, 'revenue']);
+    Route::get('promotions', [\App\Http\Controllers\Api\ReportController::class, 'promotions']);
+});
+
+// Admin routes
+Route::prefix('admin')->middleware(['auth:api', 'admin'])->group(function () {
+    Route::get('users', [UserController::class, 'index']);
+    Route::put('listings/{listing}/approve', [ListingController::class, 'approve']);
+});
+
+// Fallback route - phải đặt cuối cùng
+Route::fallback(fn () => response()->json(['message' => 'Not Found'], 404));
